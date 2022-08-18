@@ -1,0 +1,26 @@
+{
+    "id": "5118C21D",
+    "path": "/datadisk/Programming/work/R/FHAST_Project/pred_predictive_modeling/R/data_cleaning.R",
+    "project_path": "R/data_cleaning.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1660650581349.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "42,16",
+        "scrollLine": "21"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1660817724,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1660817724680,
+    "read_only": false,
+    "read_only_alternatives": []
+}
