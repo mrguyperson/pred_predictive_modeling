@@ -69,6 +69,7 @@ find_mode <- function(x) {
 lmb_fitting <- lmb %>%
   select(-c(regioncode:starttime, segment_number))
 
+set.seed(123)
 split <- initial_split(lmb_fitting)
 train <- training(split)
 test <- testing(split)
