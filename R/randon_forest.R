@@ -37,7 +37,6 @@ tune_res <- tune_grid(
 
 tune_res
 
-
 tune_res %>%
   collect_metrics() %>%
   filter(.metric == "rmse") %>%
@@ -52,8 +51,8 @@ tune_res %>%
   labs(x = NULL, y = "rmse")
 
 rf_grid <- grid_regular(
-  mtry(range = c(1, 20)),
-  min_n(range = c(1, 20)),
+  mtry(range = c(5, 15)),
+  min_n(range = c(10, 20)),
   levels = 10
 )
 
@@ -85,7 +84,7 @@ final_rf %>%
   fit(sum_lmb ~ .,
       data = juiced %>% select(-c(regioncode:starttime, segment_number))
   ) %>%
-  vip(geom = "point")
+  vip(geom = "col")
 
 final_wf <- workflow() %>%
   add_recipe(rec) %>%

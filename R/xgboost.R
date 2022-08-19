@@ -138,8 +138,8 @@ final_fit_xgb  %>%
 # check performance of best model -----------------------------------------
 
 final_fit_xgb %>% 
-  predict(xgb_juiced) %>% 
-  bind_cols(xgb_juiced) %>% 
+  predict(xgb_test) %>% 
+  bind_cols(xgb_test) %>% 
   ggplot() +
   geom_point(aes(x = sum_lmb, y = .pred)) +
   geom_abline(lty = 2, color = "red", size = 1.5)
