@@ -38,9 +38,11 @@ lmb <- full_data %>%
     stoptime,
     depth_sampled,
     estimated_height,
-    sampling_direction:peak_watts,
+    sampling_direction:research_vessel,
+      pulse_per_second:peak_watts,
     markcode:segment_species_count,
-    seconds_per_segment:gps_end_longitude
+    seconds_per_segment:gps_end_longitude,
+    specific_conductance
   )) %>%
   distinct() %>%
   drop_na() %>%
@@ -168,6 +170,19 @@ results_test %>%
   xlim(0, 20) +
   ylim(0, 20) +
   theme_bw()
+
+
+results_train %>% 
+  filter(model == "lm") %>% 
+  mutate(residual = truth - .pred) %>% 
+  ggplot(aes(x = truth, y = residual)) +
+  # geom_abline(lty = 2, color = "black", size = 1.5) +
+  geom_point(alpha = 0.5, color = "dodgerblue") + 
+  theme_bw() +
+  xlim(0,25) +
+  ylim(0,25) +
+  xlab("observed number of fish") +
+  ylab("residual of prediction")
 
 
 m <- full_data %>%

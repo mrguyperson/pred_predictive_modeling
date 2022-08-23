@@ -1,6 +1,7 @@
 library(tidymodels)
 
-splits <- initial_split(lmb)
+set.seed(123)
+splits <- initial_split(lmb, strata = seconds_per_transect)
 
 training_data <- training(splits)
 testing_data <- testing(splits)
@@ -8,14 +9,16 @@ testing_data <- testing(splits)
 cores <- parallel::detectCores()
 
 
-spec <- rand_forest(mtry = tune(), min_n = tune(), trees = 1000) %>% 
+spec <- rand_forest(mtry = tune(), min_n = tune(), trees = tune()) %>% 
   # set_engine("ranger", num.threads = cores) %>% 
   set_engine("ranger") %>% 
   set_mode("regression")
 
 rec <- recipe(sum_lmb ~ ., data = training_data) %>% 
   update_role(regioncode, subregion, sampledate, segment_number, new_role = "ID") %>% 
-  step_dummy(all_nominal_predictors())
+  step_dummy(all_nominal_predictors()) %>% 
+  step_zv(all_predictors()) %>% 
+  step_corr(all_numeric_predictors(), threshold = 0.9)
 
 data_prep <- prep(rec)
 juiced <- juice(data_prep)
@@ -27,20 +30,29 @@ tune_wf <- workflow() %>%
 set.seed(234)
 folds <- vfold_cv(training_data)
 
+grid <- grid_latin_hypercube(
+  min_n(),
+  finalize(mtry(), training_data),
+  trees(),
+  size = 100
+)
+
 set.seed(345)
 doParallel::registerDoParallel()
 tune_res <- tune_grid(
   tune_wf,
   resamples = folds,
-  grid = 20
+  grid = grid
 )
 
 tune_res
 
+show_best(tune_res, "rmse")
+
 tune_res %>%
   collect_metrics() %>%
   filter(.metric == "rmse") %>%
-  select(mean, min_n, mtry) %>%
+  select(mean,mtry:min_n) %>%
   pivot_longer(min_n:mtry,
                values_to = "value",
                names_to = "parameter"
@@ -52,8 +64,8 @@ tune_res %>%
 
 rf_grid <- grid_regular(
   mtry(range = c(5, 15)),
-  min_n(range = c(10, 20)),
-  levels = 10
+  min_n(range = c(5, 15)),
+  levels = 20
 )
 
 set.seed(456)
@@ -103,28 +115,30 @@ final_res %>%
   geom_point(alpha = 0.5, color = "dodgerblue") + 
   theme_bw() +
   xlab("observed number of fish") +
-  ylab("predicted number of fish")
+  ylab("predicted number of fish") +
+  xlim(0,25) +
+  ylim(0,15)
 
-lmb2 <- lmb %>% select(-c(Sample.Area, Wind.Speed, Conductivity, Temp, Number.Snag, Tide.Stage))
-
-splits <- initial_split(lmb2, strata = lmb)
-
-training_data <- training(splits)
-testing_data <- testing(splits)
-
-spec <- parsnip::logistic_reg() %>%
-  parsnip::set_engine("glm")
-
-rec <- recipe(lmb ~ ., data = training_data) %>% 
-  update_role(Date, new_role = "ID") %>% 
-  themis::step_rose(lmb)
-
-wf <-   workflows::workflow() %>%
-  workflows::add_recipe(rec) %>%
-  workflows::add_model(spec)
-
-fit <- wf %>%
-  tune::last_fit(splits)
-
-fit %>% collect_metrics()
-
+# lmb2 <- lmb %>% select(-c(Sample.Area, Wind.Speed, Conductivity, Temp, Number.Snag, Tide.Stage))
+# 
+# splits <- initial_split(lmb2, strata = lmb)
+# 
+# training_data <- training(splits)
+# testing_data <- testing(splits)
+# 
+# spec <- parsnip::logistic_reg() %>%
+#   parsnip::set_engine("glm")
+# 
+# rec <- recipe(lmb ~ ., data = training_data) %>% 
+#   update_role(Date, new_role = "ID") %>% 
+#   themis::step_rose(lmb)
+# 
+# wf <-   workflows::workflow() %>%
+#   workflows::add_recipe(rec) %>%
+#   workflows::add_model(spec)
+# 
+# fit <- wf %>%
+#   tune::last_fit(splits)
+# 
+# fit %>% collect_metrics()
+# 

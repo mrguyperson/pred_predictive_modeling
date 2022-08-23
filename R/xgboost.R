@@ -23,32 +23,34 @@ xgb_data <- lmb_fitting %>%
 # test-train split --------------------------------------------------------
 
 set.seed(123)
-xgb_split <- initial_split(xgb_data)
+xgb_split <- initial_split(xgb_data, strata = sum_lmb)
 xgb_train <- training(xgb_split)
 xgb_test <- testing(xgb_split)
 
 # recipe to allow upsampling
-set.seed(345)
-xgb_rec <- recipe(sum_lmb ~ ., data = xgb_train)
-  #step_dummy(all_nominal_predictors()) %>%
-  #step_interact(~contains("Dummy"):contains("Numeric")) %>%
+
+xgb_rec <- recipe(sum_lmb ~ ., data = xgb_train) %>%
+  # step_poly(all_numeric_predictors()) %>%
+  step_dummy(all_nominal_predictors()) %>% 
+  step_zv(all_predictors()) %>% 
+  step_corr(all_numeric_predictors(), threshold = 0.9)
 
 
 # apply recipe
-set.seed(123)
+
 xgb_juiced <- xgb_rec %>% prep() %>% juice()
 
 # set up folds; use bootstraps because of small sample size
-set.seed(234)
-#xgb_folds <- bootstraps(xgb_juiced, strata = sasq)
 
+#xgb_folds <- bootstraps(xgb_juiced, strata = sasq)
+set.seed(234)
 xgb_folds <- vfold_cv(xgb_juiced)
 
 # build model -------------------------------------------------------------
 
 # model tuning
 xgb_spec <- boost_tree(
-  trees = 3000,
+  trees = tune(),
   tree_depth = tune(),
   min_n = tune(),
   loss_reduction = tune(),
@@ -61,13 +63,14 @@ xgb_spec <- boost_tree(
 
 # tuning grid
 xgb_grid <- grid_latin_hypercube(
+  trees(),
   tree_depth(),
   min_n(),
   loss_reduction(),
   sample_size = sample_prop(),
   finalize(mtry(), xgb_train),
   learn_rate(),
-  size = 40
+  size = 100
 )
 
 # create a workflow
@@ -76,7 +79,7 @@ xgb_wf <- workflow() %>%
   add_model(xgb_spec)
 
 
-set.seed(123)
+
 
 # fit the model
 xgb_res <- tune_grid(
@@ -137,27 +140,45 @@ final_fit_xgb  %>%
 
 # check performance of best model -----------------------------------------
 
-final_fit_xgb %>% 
-  predict(xgb_test) %>% 
-  bind_cols(xgb_test) %>% 
+final_xgb_split <- final_xgb %>% 
+  last_fit(xgb_split)
+
+final_xgb_split %>% 
+  collect_predictions() %>% 
+  mutate(
+    residual = sum_lmb - .pred) %>% 
   ggplot() +
-  geom_point(aes(x = sum_lmb, y = .pred)) +
-  geom_abline(lty = 2, color = "red", size = 1.5)
+  geom_point(aes(x = sum_lmb, y = residual), color = "dodgerblue") +
+  # geom_abline(lty = 2, color = "red", size = 1.5)
+  theme_bw()
 
-final_fit_xgb %>% 
-  predict(xgb_test) %>% 
-  bind_cols(xgb_test) %>% 
-  group_by(sasq) %>% 
-  count(.pred_class)
+final_xgb_split %>% 
+  collect_predictions() %>% 
+  ggplot() +
+  geom_point(aes(x = sum_lmb, y = .pred), color = "dodgerblue") +
+  geom_abline(lty = 2, color = "red", size = 1.5) +
+  theme_bw() +
+  xlim(0,25) +
+  ylim(0,15)
 
-final_fit_xgb %>% 
-  predict(xgb_test, type = "prob") %>% 
-  bind_cols(xgb_test) %>% 
-  roc_curve(sasq, .pred_absent) %>% 
-  autoplot()
 
-xgb_test_output <-   final_fit_xgb %>% 
-  predict(xgb_test, type = "prob") %>% 
-  bind_cols(xgb_test)
+final_xgb_split %>% 
+  collect_metrics()
 
-roc_auc(xgb_test_output, truth = sasq, .pred_absent)
+# final_fit_xgb %>% 
+#   predict(xgb_test) %>% 
+#   bind_cols(xgb_test) %>% 
+#   group_by(sasq) %>% 
+#   count(.pred_class)
+# 
+# final_fit_xgb %>% 
+#   predict(xgb_test, type = "prob") %>% 
+#   bind_cols(xgb_test) %>% 
+#   roc_curve(sasq, .pred_absent) %>% 
+#   autoplot()
+# 
+# xgb_test_output <-   final_fit_xgb %>% 
+#   predict(xgb_test, type = "prob") %>% 
+#   bind_cols(xgb_test)
+# 
+# roc_auc(xgb_test_output, truth = sasq, .pred_absent)
