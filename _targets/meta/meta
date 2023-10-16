@@ -1,0 +1,12 @@
+name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
+data_folder|stem|c973c2620afbe3cd|10dda505e0a03a35|ef46db3751d8e999|-1589943188||t19634.5888412786s|887021b347b02e8f|100|rds|local|vector|||1.822||
+file_list|stem|28e633e9f95105ec|a2141a8ef56626ca|74461be1fc309030|149261240||t19634.6045540601s|c76d948ad53e17f7|135428|rds|local|vector|||0.207|1m22mOne or more parsing issues, call problems on your data frame for details,e.g.  dat  vroom...  problemsdat|
+files|stem|d1844ab75d16a8e6|c20eda0958f73812|06f0fb92f6101af4|-86421757||t19634.5889340104s|17e1813002340629|93|rds|local|vector|||0||
+find_mode|function|e9cd32f5842609f2|||||||||||||||
+full_data|stem|f684d174401e375c|9648252cba2f9584|1331852c7b559478|546643068||t19634.6045550324s|f26719c7587cfa14|130891|rds|local|vector|||0.011||
+get_csv_from_path|function|5d2edcf7cc56ebb1|||||||||||||||
+get_full_data_set|function|16c93450c055b2a8|||||||||||||||
+get_lmb_data|function|04f04dd17b152fbb|||||||||||||||
+lmb_data|stem|9e76ccd13a3562d1|75610b317ca17f4f|a7a22655a7e8fd4f|-130301441||t19634.6045625787s|63ce00f32629f58f|16104|rds|local|vector|||0.647||
+names_to_drop|stem|7d6acb63a771dcb8|3597060a23f2976c|1684da9af1c519e8|198567699||t19634.6045541064s|f02b269bc80ae470|129|rds|local|vector|||0||
+tax_cols|stem|68d9974ff7512425|4ec414380275c87d|42736696b5f85381|-254040855||t19634.6045541064s|83dfaca672102c9e|139|rds|local|vector|||0||
