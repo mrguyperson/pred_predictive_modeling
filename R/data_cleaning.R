@@ -1,7 +1,7 @@
-library(tidyverse)
-library(here)
-library(broom)
-library(tidymodels)
+# library(tidyverse)
+# library(here)
+# library(broom)
+# library(tidymodels)
 
 
 
@@ -57,12 +57,18 @@ get_lmb_data <- function(full_data){
     mutate(sum_lmb = sum(lmb)) %>%
     ungroup() %>%
     select(-lmb) %>%
-    distinct()
+    distinct() %>%
+    pres_abs_conversion()
 }
 find_mode <- function(x) {
   u <- unique(x)
   tab <- tabulate(match(x, u))
   u[tab == max(tab)]
+}
+
+pres_abs_conversion <- function(data) {
+  data %>%
+    mutate(count_lmb = factor(fifelse(sum_lmb > 0, 1, 0)))
 }
 
 # lmb <- lmb %>%

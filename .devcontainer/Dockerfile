@@ -17,4 +17,5 @@ RUN install2.r languageserver \
     pscl \
     doParallel \
     targets \
-    tarchetypes
+    tarchetypes \
+    themis
