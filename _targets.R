@@ -57,6 +57,7 @@ source(here("R", "data_cleaning.R"))
 source(here("R", "random_forest.R"))
 source(here("R", "regression.R"))
 source(here("R", "svm.R"))
+source(here("R", "xgboost.R"))
 
 list(
   tar_target(
@@ -200,6 +201,43 @@ list(
     name = final_svm_regression_fit,
     command = tune::last_fit(final_svm_regression_workflow, split)
   ),
+  ##### xgboost ------ regression
+  tar_target(
+    name = xgb_recipe_regression,
+    command = rf_rec(training_data, "sum_lmb", "count_lmb", id_cols)
+  ),
+  tar_target(
+    name = xgb_spec_regression,
+    command = xgb_spec()
+  ),
+  tar_target(
+    name = xgb_workflow_regression,
+    command = tune_wf(xgb_recipe_regression, xgb_spec_regression)
+  ),
+  tar_target(
+    name = xgb_grid,
+    command = set_xgb_grid(training_data)
+  ),
+  tar_target(
+    name = tuned_xgb_regression_results,
+    command = tune_model_grid(xgb_workflow_regression, folds, xgb_grid)
+  ),
+  tar_target(
+    name = best_xgb_regession,
+    command = tune::select_best(tuned_xgb_regression_results, "rmse")
+  ),
+  tar_target(
+    name = final_xgb_regression,
+    command = tune::finalize_model(xgb_spec_regression, best_xgb_regession)
+  ),
+  tar_target(
+    name = final_xgb_regression_workflow,
+    command = tune_wf(xgb_recipe_regression, final_xgb_regression)
+  ),
+  tar_target(
+    name = final_xgb_regression_fit,
+    command = tune::last_fit(final_xgb_regression_workflow, split)
+  ),
   ##### logistic regression
   tar_target(
     name = log_reg_spec,
@@ -207,7 +245,7 @@ list(
   ),
   tar_target(
     name = log_reg_recipe,
-    command = reg_recipe(training_data, "count_lmb", "sum_lmb", id_cols) %>% themis::step_rose()
+    command = reg_recipe(training_data, "count_lmb", "sum_lmb", id_cols) %>% themis::step_upsample(all_outcomes())
   ),
   tar_target(
     name = logistic_reg_wf,
@@ -224,7 +262,7 @@ list(
   ),
   tar_target(
     name = rf_recipe_classification,
-    command = rf_rec(training_data, "count_lmb", "sum_lmb", id_cols) %>% themis::step_rose()
+    command = rf_rec(training_data, "count_lmb", "sum_lmb", id_cols) %>% themis::step_upsample(all_outcomes())
   ),
   tar_target(
     name = rf_classification_workflow,
@@ -257,7 +295,7 @@ list(
   ),
   tar_target(
     name = svm_recipe_classification,
-    command = svm_recipe(training_data, y_var = "count_lmb", col_to_drop = "sum_lmb", id_cols) %>% themis::step_rose()
+    command = svm_recipe(training_data, y_var = "count_lmb", col_to_drop = "sum_lmb", id_cols) %>% themis::step_upsample(all_outcomes())
   ),
   tar_target(
     name = svm_classification_wf,
@@ -282,5 +320,38 @@ list(
   tar_target(
     name = final_svm_classification_fit,
     command = tune::last_fit(final_svm_classification_workflow, split)
+  ),
+  ##### xgboost ----- classification
+  tar_target(
+    name = xgb_recipe_classification,
+    command = rf_rec(training_data, "count_lmb", "sum_lmb", id_cols) %>% themis::step_upsample(all_outcomes())
+  ),
+  tar_target(
+    name = xgb_spec_classification,
+    command = xgb_spec(mode = "classification")
+  ),
+  tar_target(
+    name = xgb_workflow_classification,
+    command = tune_wf(xgb_recipe_classification, xgb_spec_classification)
+  ),
+  tar_target(
+    name = tuned_xgb_classification_results,
+    command = tune_model_grid(xgb_workflow_classification, folds, xgb_grid)
+  ),
+  tar_target(
+    name = best_xgb_classification,
+    command = tune::select_best(tuned_xgb_classification_results, "roc_auc")
+  ),
+  tar_target(
+    name = final_xgb_classification,
+    command = tune::finalize_model(xgb_spec_classification, best_xgb_classification)
+  ),
+  tar_target(
+    name = final_xgb_classification_workflow,
+    command = tune_wf(xgb_recipe_classification, final_xgb_classification)
+  ),
+  tar_target(
+    name = final_xgb_classification_fit,
+    command = tune::last_fit(final_xgb_classification_workflow, split)
   )
 )

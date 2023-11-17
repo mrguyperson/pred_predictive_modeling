@@ -1,8 +1,8 @@
-library(tidymodels)
-library(tidyverse)
-library(here)
+# library(tidymodels)
+# library(tidyverse)
+# library(here)
 
-doParallel::registerDoParallel()
+# doParallel::registerDoParallel()
 
 
 # load and prep data ------------------------------------------------------
@@ -10,175 +10,177 @@ doParallel::registerDoParallel()
 #source(file = here("R", "data_cleaning.R")) # clean and load the data
 
 # add labels to predictor variables
-predictors <- lmb_fitting %>%
-  select(-sum_lmb) %>%
-  rename_if(is.factor, .funs = ~ paste(., "_Dummy", sep = "")) %>%
-  rename_if(is.numeric, .funs = ~ paste(., "_Numeric", sep = ""))
+# predictors <- lmb_fitting %>%
+#   select(-sum_lmb) %>%
+#   rename_if(is.factor, .funs = ~ paste(., "_Dummy", sep = "")) %>%
+#   rename_if(is.numeric, .funs = ~ paste(., "_Numeric", sep = ""))
 
-xgb_data <- lmb_fitting %>% 
-  select(sum_lmb) %>% 
-  bind_cols(predictors)
+# xgb_data <- lmb_fitting %>% 
+#   select(sum_lmb) %>% 
+#   bind_cols(predictors)
 
 
 # test-train split --------------------------------------------------------
 
-set.seed(123)
-xgb_split <- initial_split(xgb_data, strata = sum_lmb)
-xgb_train <- training(xgb_split)
-xgb_test <- testing(xgb_split)
+# set.seed(123)
+# xgb_split <- initial_split(xgb_data, strata = sum_lmb)
+# xgb_train <- training(xgb_split)
+# xgb_test <- testing(xgb_split)
 
 # recipe to allow upsampling
 
-xgb_rec <- recipe(sum_lmb ~ ., data = xgb_train) %>%
-  # step_poly(all_numeric_predictors()) %>%
-  step_dummy(all_nominal_predictors()) %>% 
-  step_zv(all_predictors()) %>% 
-  step_corr(all_numeric_predictors(), threshold = 0.9)
+# xgb_recipe <- recipe(sum_lmb ~ ., data = xgb_train) %>%
+#   # step_poly(all_numeric_predictors()) %>%
+#   step_dummy(all_nominal_predictors()) %>% 
+#   step_zv(all_predictors()) %>% 
+#   step_corr(all_numeric_predictors(), threshold = 0.9)
 
 
 # apply recipe
 
-xgb_juiced <- xgb_rec %>% prep() %>% juice()
+# xgb_juiced <- xgb_rec %>% prep() %>% juice()
 
 # set up folds; use bootstraps because of small sample size
 
 #xgb_folds <- bootstraps(xgb_juiced, strata = sasq)
-set.seed(234)
-xgb_folds <- vfold_cv(xgb_juiced)
+# set.seed(234)
+# xgb_folds <- vfold_cv(xgb_juiced)
 
 # build model -------------------------------------------------------------
 
 # model tuning
-xgb_spec <- boost_tree(
-  trees = tune(),
-  tree_depth = tune(),
-  min_n = tune(),
-  loss_reduction = tune(),
-  sample_size = tune(),
-  mtry = tune(),
-  learn_rate = tune()
+xgb_spec <- function(engine = "xgboost", mode = "regression"){
+  boost_tree(
+    trees = tune(),
+    tree_depth = tune(),
+    min_n = tune(),
+    loss_reduction = tune(),
+    sample_size = tune(),
+    mtry = tune(),
+    learn_rate = tune()
 ) %>%
-  set_engine("xgboost") %>%
-  set_mode("regression")
-
+  set_engine(engine) %>%
+  set_mode(mode)
+}
 # tuning grid
-xgb_grid <- grid_latin_hypercube(
-  trees(),
-  tree_depth(),
-  min_n(),
-  loss_reduction(),
-  sample_size = sample_prop(),
-  finalize(mtry(), xgb_train),
-  learn_rate(),
-  size = 100
-)
-
+set_xgb_grid <- function(training_data){
+  grid_latin_hypercube(
+    trees(),
+    tree_depth(),
+    min_n(),
+    loss_reduction(),
+    sample_size = sample_prop(),
+    finalize(mtry(), training_data),
+    learn_rate(),
+    size = 100
+  )
+}
 # create a workflow
-xgb_wf <- workflow() %>% 
-  add_formula(sum_lmb ~ .) %>%
-  add_model(xgb_spec)
+# xgb_wf <- workflow() %>% 
+#   add_formula(sum_lmb ~ .) %>%
+#   add_model(xgb_spec)
 
 
 
 
 # fit the model
-xgb_res <- tune_grid(
-  xgb_wf,
-  resamples = xgb_folds,
-  grid = xgb_grid,
-  control = control_grid(save_pred = TRUE, verbose = TRUE)
-)
+# xgb_res <- tune_grid(
+#   xgb_wf,
+#   resamples = xgb_folds,
+#   grid = xgb_grid,
+#   control = control_grid(save_pred = TRUE, verbose = TRUE)
+# )
 
 # evaluate model performance ----------------------------------------------
 
-# check metrics
-xgb_res %>%
-  collect_metrics() %>%
-  filter(.metric == "rmse") %>%
-  select(mean, mtry:sample_size) %>%
-  pivot_longer(mtry:sample_size,
-               values_to = "value",
-               names_to = "parameter"
-  ) %>%
-  ggplot(aes(value, mean, color = parameter)) +
-  geom_point(alpha = 0.8, show.legend = FALSE) +
-  facet_wrap(~parameter, scales = "free_x") +
-  labs(x = NULL, y = "rmse")
+# # check metrics
+# xgb_res %>%
+#   collect_metrics() %>%
+#   filter(.metric == "rmse") %>%
+#   select(mean, mtry:sample_size) %>%
+#   pivot_longer(mtry:sample_size,
+#                values_to = "value",
+#                names_to = "parameter"
+#   ) %>%
+#   ggplot(aes(value, mean, color = parameter)) +
+#   geom_point(alpha = 0.8, show.legend = FALSE) +
+#   facet_wrap(~parameter, scales = "free_x") +
+#   labs(x = NULL, y = "rmse")
 
-# best models
-show_best(xgb_res, "rmse")
+# # best models
+# show_best(xgb_res, "rmse")
 
-best_auc <- select_best(xgb_res, "rmse")
-best_auc
+# best_auc <- select_best(xgb_res, "rmse")
+# best_auc
 
-# create workflow with best model
-final_xgb <- finalize_workflow(
-  xgb_wf,
-  best_auc
-)
+# # create workflow with best model
+# final_xgb <- finalize_workflow(
+#   xgb_wf,
+#   best_auc
+# )
 
-final_xgb
-
-
-# check for variable importance
-library(vip)
-
-final_fit_xgb <- final_xgb %>%
-  fit(data = xgb_juiced) 
-
-final_fit_xgb  %>%
-  extract_fit_parsnip() %>%
-  vip(geom = "col")
-
-# final_xgb %>% last_fit(xgb_split) %>% collect_metrics()
-# final_xgb %>% last_fit(xgb_split) %>% conf_mat_resampled()
-
-# xgb_model <- final_xgb %>% last_fit(xgb_split)
-
-# xgb_model <- xgb_model$.workflow[[1]]
+# final_xgb
 
 
-# check performance of best model -----------------------------------------
+# # check for variable importance
+# library(vip)
 
-final_xgb_split <- final_xgb %>% 
-  last_fit(xgb_split)
+# final_fit_xgb <- final_xgb %>%
+#   fit(data = xgb_juiced) 
 
-final_xgb_split %>% 
-  collect_predictions() %>% 
-  mutate(
-    residual = sum_lmb - .pred) %>% 
-  ggplot() +
-  geom_point(aes(x = sum_lmb, y = residual), color = "dodgerblue") +
-  # geom_abline(lty = 2, color = "red", size = 1.5)
-  theme_bw()
+# final_fit_xgb  %>%
+#   extract_fit_parsnip() %>%
+#   vip(geom = "col")
 
-final_xgb_split %>% 
-  collect_predictions() %>% 
-  ggplot() +
-  geom_point(aes(x = sum_lmb, y = .pred), color = "dodgerblue") +
-  geom_abline(lty = 2, color = "red", size = 1.5) +
-  theme_bw() +
-  xlim(0,25) +
-  ylim(0,15)
+# # final_xgb %>% last_fit(xgb_split) %>% collect_metrics()
+# # final_xgb %>% last_fit(xgb_split) %>% conf_mat_resampled()
+
+# # xgb_model <- final_xgb %>% last_fit(xgb_split)
+
+# # xgb_model <- xgb_model$.workflow[[1]]
 
 
-final_xgb_split %>% 
-  collect_metrics()
+# # check performance of best model -----------------------------------------
 
-# final_fit_xgb %>% 
-#   predict(xgb_test) %>% 
-#   bind_cols(xgb_test) %>% 
-#   group_by(sasq) %>% 
-#   count(.pred_class)
-# 
-# final_fit_xgb %>% 
-#   predict(xgb_test, type = "prob") %>% 
-#   bind_cols(xgb_test) %>% 
-#   roc_curve(sasq, .pred_absent) %>% 
-#   autoplot()
-# 
-# xgb_test_output <-   final_fit_xgb %>% 
-#   predict(xgb_test, type = "prob") %>% 
-#   bind_cols(xgb_test)
-# 
-# roc_auc(xgb_test_output, truth = sasq, .pred_absent)
+# final_xgb_split <- final_xgb %>% 
+#   last_fit(xgb_split)
+
+# final_xgb_split %>% 
+#   collect_predictions() %>% 
+#   mutate(
+#     residual = sum_lmb - .pred) %>% 
+#   ggplot() +
+#   geom_point(aes(x = sum_lmb, y = residual), color = "dodgerblue") +
+#   # geom_abline(lty = 2, color = "red", size = 1.5)
+#   theme_bw()
+
+# final_xgb_split %>% 
+#   collect_predictions() %>% 
+#   ggplot() +
+#   geom_point(aes(x = sum_lmb, y = .pred), color = "dodgerblue") +
+#   geom_abline(lty = 2, color = "red", size = 1.5) +
+#   theme_bw() +
+#   xlim(0,25) +
+#   ylim(0,15)
+
+
+# final_xgb_split %>% 
+#   collect_metrics()
+
+# # final_fit_xgb %>% 
+# #   predict(xgb_test) %>% 
+# #   bind_cols(xgb_test) %>% 
+# #   group_by(sasq) %>% 
+# #   count(.pred_class)
+# # 
+# # final_fit_xgb %>% 
+# #   predict(xgb_test, type = "prob") %>% 
+# #   bind_cols(xgb_test) %>% 
+# #   roc_curve(sasq, .pred_absent) %>% 
+# #   autoplot()
+# # 
+# # xgb_test_output <-   final_fit_xgb %>% 
+# #   predict(xgb_test, type = "prob") %>% 
+# #   bind_cols(xgb_test)
+# # 
+# # roc_auc(xgb_test_output, truth = sasq, .pred_absent)
