@@ -63,16 +63,16 @@ xgb_spec <- function(engine = "xgboost", mode = "regression"){
   set_mode(mode)
 }
 # tuning grid
-set_xgb_grid <- function(training_data){
+set_xgb_grid <- function(training_data, size = 100){
   grid_latin_hypercube(
     trees(),
     tree_depth(),
     min_n(),
     loss_reduction(),
     sample_size = sample_prop(),
-    finalize(mtry(), training_data),
+    dials::finalize(mtry(), training_data),
     learn_rate(),
-    size = 100
+    size = size
   )
 }
 # create a workflow

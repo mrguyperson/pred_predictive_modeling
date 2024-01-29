@@ -1,4 +1,6 @@
-.Rproj.user
+﻿.Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+/data/*
+/_targets/*

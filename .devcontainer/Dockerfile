@@ -1,6 +1,6 @@
 FROM rocker/geospatial:4.3
 
-RUN apt update && apt install -y --no-install-recommends python3-pip
+RUN apt update && apt install -y --no-install-recommends python3-pip libglpk-dev
 
 RUN pip3 install radian
 
@@ -18,4 +18,28 @@ RUN install2.r languageserver \
     doParallel \
     targets \
     tarchetypes \
-    themis
+    themis \
+    crew \
+    igraph \
+    lutz \
+    smoothr \ 
+    exactextractr \
+    raster \
+    terra \
+    viridis \
+    patchwork \
+    leaflet \
+    nlrx \
+    devtools \
+    qs 
+    # shadow \
+    # maptools
+
+# RUN R -e 'install.packages("nanonext", repos = "https://shikokuchuo.r-universe.dev")'
+# RUN R -e 'install.packages("mirai", repos = "https://shikokuchuo.r-universe.dev")'
+# RUN R -e 'install.packages("crew", type = "source")'
+# RUN R -e 'install.packages("targets", type = "source")'
+# RUN R -e 'install.packages("tarchetypes", type = "source")'
+RUN R -e 'devtools::install_github("cran/maptools")'
+RUN R -e 'devtools::install_github("michaeldorman/shadow")'
+RUN R -e 'install.packages("inborutils",repos = c(inbo = "https://inbo.r-universe.dev",CRAN = "https://cloud.r-project.org"))'

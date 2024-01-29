@@ -16,46 +16,33 @@ rf_spec <- function(engine = "ranger", mode = "regression") {
     set_mode(mode)
 }
 
-rf_rec <- function(training_data, y_var, col_to_drop, id_cols) {
+rf_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
   rec_formula <- formula(glue::glue("{y_var} ~ ."))
   recipe(rec_formula, data = training_data) %>% 
     update_role(all_of(id_cols), new_role = "ID") %>% 
-    step_rm(all_of(col_to_drop)) %>%
-    step_dummy(all_nominal_predictors()) %>% 
-    step_zv(all_predictors()) %>% 
-    step_corr(all_numeric_predictors(), threshold = 0.9)
+    step_dummy(all_nominal_predictors(), -pres_abs) %>% 
+    step_zv(all_predictors(), -pres_abs) %>% 
+    step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
+    themis::step_upsample(pres_abs) %>%
+    step_rm(all_of(col_to_drop))
 }
 
 # data_prep <- prep(rec)
 # juiced <- juice(data_prep)
 
-tune_wf <- function(rec, spec){
-  workflow() %>%
-    add_recipe(rec) %>%
-    add_model(spec)
-}
 
 # set.seed(234)
 # folds <- vfold_cv(training_data)
 
-set_rf_grid <- function(training_data) {
+set_rf_grid <- function(training_data, size = 100) {
     grid_latin_hypercube(
       min_n(),
-      finalize(mtry(), training_data),
+      dials::finalize(mtry(), training_data),
       trees(),
-      size = 100
+      size = size
   )
 }
 
-
-tune_model_grid <- function(wf, folds, grid){
-  doParallel::registerDoParallel()
-  tune_grid(
-    wf,
-    resamples = folds,
-    grid = grid
-  )
-}
 
 
 # show_best(tune_res, "rmse")
