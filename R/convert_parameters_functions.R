@@ -13,7 +13,7 @@ params_pivot_longer <- function(df) {
 params_pivot_wider <- function(df) {
   df %>% 
     select(1:2) %>% 
-    pivot_wider(names_from = term, values_from = pikeminnow)
+    pivot_wider(names_from = term, values_from = sasq)
 }
 
 write_rds_temp_folder <- function(df, filename) {

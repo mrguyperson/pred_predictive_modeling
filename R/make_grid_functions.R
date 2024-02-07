@@ -73,14 +73,15 @@ make_vor_cells = function(points = NULL,
                           top = NULL,
                           resolution = NULL){
 
-
   # set up a set of vornoi cells
   vor_cells_1 = st_voronoi(x = st_union(points)) %>%
     st_sf() %>%
     # Break up the geomerty collection to a polygon simple feature
     st_cast() %>% 
     # Join with the points to get the distance attribute form the sample_points layer
-    st_join(points) 
+    st_join(points)
+    ##### CHECK LATER
+    # st_transform(crs = st_crs(top))
   
   #Get to top most cell using the user input point
   top_vor_cell = top %>% 
@@ -113,8 +114,7 @@ make_grid = function(resolution = NULL,
                      cells = NULL,
                      buffers = NULL,
                      large_buffer = NULL){
-  
-   st_agr(cells) = "constant"
+  st_agr(cells) = "constant"
   st_agr(buffers) = "constant"
   
   grid = cells %>% 
@@ -177,8 +177,8 @@ full_grid_processing <- function(grid_center_line,
                    buffers = buffers,
                    large_buffer = large_buffer) %>% 
     # set left and right bank correctly
-    mutate(lat_dist = ifelse(lat_dist>0, 
-                             ifelse(left_or_right<0,
+    mutate(lat_dist = fifelse(lat_dist>0, 
+                             fifelse(left_or_right<0,
                                     lat_dist,
                                     -lat_dist),
                              0))

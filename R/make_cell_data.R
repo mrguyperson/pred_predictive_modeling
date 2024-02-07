@@ -115,6 +115,7 @@ select_variable_habitat <- function(v_and_d_daily_data_sets, habitat_fixed, habi
           # Add in variable to calculate inundation
           wetted = fifelse(wetted_area > 0, 1, 0)) %>% 
     ungroup() %>%
+    drop_na(c(velocity, depth)) %>%
     st_as_sf()
 }
 
@@ -123,10 +124,10 @@ make_pred_parm <- function(predator_path) {
                       col_types = cols(.default = "d", species = "c")) %>%
   # the 1 ensures the names are kept
     rename(species_temp = species) %>% 
-    pivot_longer(cols=c(-species_temp), names_to="specie") %>%
+    pivot_longer(cols=c(-species_temp), names_to="species") %>%
     pivot_wider(names_from=c(species_temp)) %>% 
     mutate(area_pred_a = convert_logistic_parameters(area_pred_10, area_pred_90)[[1]],
           area_pred_b = convert_logistic_parameters(area_pred_10, area_pred_90)[[2]]) %>%
-    select(-specie) %>% 
+    # select(-species) %>% 
     as.list() 
 }

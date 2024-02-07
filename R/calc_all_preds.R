@@ -1,28 +1,19 @@
 # a function to do the predator calculations
 
-calc_all_preds = function(p_id, pred_habitat, fish_length){
+calc_all_preds = function(species, pred_parm, predator_predictions, variable_habitat, fish_length, habitat_parm, cover_fra_model, dis_to_cover_model){
+  p_id <- which(pred_parm$species == species)
+  hab_ratings <- predator_predictions %>%
+    filter(pred_species == species) %>%
+    select(hab_rating)
+
   # Get the pred and prey length
   pred_length = exp(pred_parm$pred_length_mean[[p_id]])
   prey_length = exp(pred_parm$gape_a[[p_id]] +
                       pred_parm$gape_b[[p_id]] * pred_length^2)
   # Check if it is vulnerable to predation
-  length_pred_bonous = ifelse(fish_length >= prey_length, 0, 1)
+  length_pred_bonous = fifelse(fish_length >= prey_length, 0, 1)
   
-  pred_habitat = pred_habitat %>% 
-    mutate(shaded = ifelse(shade > 0.5, 1, 0),
-           substrate = rowSums(across(gravel:rock)),
-           # if rocky substrate is the majority in a cell, then 1, else 0
-           substrate = if_else(substrate >= fine & substrate > 0, 1, 0),
-           # Calculate the predation function
-           input = pred_parm$pred_glm_int[[p_id]] +
-             pred_parm$pred_glm_shade[[p_id]] * shaded +
-             pred_parm$pred_glm_veg[[p_id]] * veg +
-             pred_parm$pred_glm_wood[[p_id]] * wood +
-             pred_parm$pred_glm_depth[[p_id]] * depth +
-             pred_parm$pred_glm_velocity[[p_id]] * velocity +
-             pred_parm$pred_glm_substrate[[p_id]] * substrate,
-           # Calculate the habitat rating
-           hab_rating = 1 / (1 + exp(-input))* ifelse(wetted_area > 0, 1, 0)) %>% 
+  pred_habitat <- bind_cols(variable_habitat, hab_ratings)  %>% 
     group_by(date) %>% 
     mutate(# Place predators
       predators = replace_na(round((hab_rating * wetted_area) /
@@ -45,7 +36,7 @@ calc_all_preds = function(p_id, pred_habitat, fish_length){
       survival_prob = 1 - habitat_parm$pred_success +
         (habitat_parm$pred_success * (1 - (1 - survival_bonus) * (1 - turb_bonus))),
       # Calculate the predation risk and include the length bonus
-      pred_mort_risk = if_else(porp_area > 1,
+      pred_mort_risk = fifelse(porp_area > 1,
                                1 - (survival_prob ^ porp_area),
                                porp_area * (1 - survival_prob)) * length_pred_bonous) %>% 
     # Remove temporary columns
