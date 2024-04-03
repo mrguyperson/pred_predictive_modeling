@@ -210,3 +210,165 @@ make_predator_maps <- function(df, fill_option, scale_name, area) {
   ggsave(filename = path, device = "jpg")
   path
 }
+
+make_pred_model_difference_df <- function(pred_prediction_summary){
+  pred_prediction_summary %>%
+    as.data.table() %>%
+    .[!(model_name == "regression"), hab_rating := hab_rating - .[model_name == "regression", .(hab_rating)], by = c("model_name")] %>%
+    .[, substrate := fifelse(substrate == 1, "rock", "fine")] %>%
+    as_tibble()
+}
+
+make_summed_pred_model_df <- function(pred_model_difference_df) {
+  pred_model_difference_df %>%
+    as.data.table() %>%
+    .[, substrate := fifelse(substrate == 1, "rock", "fine")] %>%
+    .[, cell_num := 1:.N, by = .(tar_group, pred_species)] %>%
+    .[, .(hab_rating = sum(hab_rating)), by = .(model_name, cell_num, substrate, tar_group, prey_species, life_stage)] %>%
+    .[order(tar_group, cell_num)] %>%
+    # .[, cell_num := NULL] %>%
+    as_tibble()
+}
+
+  # pred_prediction_summary %>%
+  #   as.data.table() %>%
+  #   .[!(model_name == "logistic_regression"), hab_rating := hab_rating - .[model_name == "logistic_regression", .(hab_rating)], by = c("model_name")] %>%
+  #   .[, substrate := fifelse(substrate == 1, "rock", "fine")] %>%
+  #   .[, cell_num := 1:.N, by = c("tar_group", "pred_species")] %>%
+  #   dcast(model_name + cell_num + tar_group + prey_species + substrate + life_stage ~ .,
+  #         fun.aggregate = sum, 
+  #         value.var = c("hab_rating")) %>%
+  #   setnames(".", "hab_rating") %>% 
+  #   .[order(tar_group, cell_num)] %>%
+  #   .[, cell_num := NULL] %>%
+  #   as_tibble()
+
+
+  # t<- pred_prediction_summary %>%
+  #   as.data.table() %>%
+  #   .[!(model_name == "logistic_regression"), hab_rating := hab_rating - .[model_name == "logistic_regression", .(hab_rating)], by = .(model_name)] %>%
+  #   .[, substrate := fifelse(substrate == 1, "rock", "fine")] %>%
+  #   .[, cell_num := 1:.N, by = .(tar_group, pred_species)] %>%
+  #   .[, .(hab_rating = sum(hab_rating)), by = .(model_name, cell_num, substrate, tar_group, prey_species, life_stage)] %>%
+  #   .[order(tar_group, cell_num)] %>%
+  #   .[, cell_num := NULL] %>%
+  #   as_tibble()
+
+make_pred_model_histograms <- function(pred_prediction_summary) {
+
+  plot<-pred_prediction_summary %>%
+    filter(substrate == 1) %>%
+    mutate(model_name = fcase(
+      model_name == "regression", "Logistic Regression",
+      model_name == "rf", "Random Forest", 
+      model_name == "svm", "Support Vector Machine",
+      model_name == "glmnet", "GLMnet",
+      model_name == "nnet", "Neural Net",
+      model_name == "bag", "Bagged Neural Net",
+      model_name == "lightgbm", "LightGBM",
+      default = "XGBoost"
+    ),pred_species = fifelse(
+      pred_species == "sasq", "Pikeminnow", "Smallmouth bass"
+    )) %>%
+    rename("Species" = "pred_species") %>%
+    ggplot(aes(
+      x = hab_rating, 
+      # color = pred_species,
+      fill = Species
+      # after_stat(density)
+      )) +
+    geom_histogram(alpha = 0.5, color = "black") +
+    # geom_density() +
+    xlab("Habitat rating") +
+    ylab("Count") +
+    theme_classic(base_size = 15) +
+    theme(legend.position = "bottom") +
+    facet_wrap(~model_name)
+  path <- here::here("output", "predator_histograms.jpg")
+  ggsave(filename = path, device = "jpg", width = 9, height = 6)
+  path
+}
+
+
+
+# microbenchmark(
+#   option1 = {  pred_prediction_summary %>%
+#     as.data.table() %>%
+#     .[!(model_name == "logistic_regression"), hab_rating := hab_rating - .[model_name == "logistic_regression", .(hab_rating)], by = c("model_name")] %>%
+#     .[, substrate := fifelse(substrate == 1, "rock", "fine")] %>%
+#     .[, cell_num := 1:.N, by = c("tar_group", "pred_species")] %>%
+#     dcast(model_name + cell_num + tar_group + prey_species + substrate + life_stage ~ .,
+#           fun.aggregate = sum, 
+#           value.var = c("hab_rating")) %>%
+#     setnames(".", "hab_rating") %>% 
+#     .[order(tar_group, cell_num)] %>%
+#     .[, cell_num := NULL] %>%
+#     as_tibble()},
+#   option2 = {
+#       pred_prediction_summary %>%
+#     as.data.table() %>%
+#     .[!(model_name == "logistic_regression"), hab_rating := hab_rating - .[model_name == "logistic_regression", .(hab_rating)], by = c("model_name")] %>%
+#     .[, substrate := fifelse(substrate == 1, "rock", "fine")] %>%
+#     .[, cell_num := 1:.N, by = c("tar_group", "pred_species")] %>%
+#     .[, hab_rating := sum(hab_rating), by = c("model_name", "cell_num", "substrate")] %>%
+#     .[order(tar_group, cell_num)] %>%
+#     as_tibble()
+#   },
+#   times = 10
+# )
+
+join_pred_and_hab <- function(pred_predictions, habitat_variable) {
+  dt1 <- pred_predictions %>%
+    as.data.table() %>%
+    .[substrate == "rock"]
+
+  dt2 <- habitat_variable %>% 
+    as.data.table() %>% 
+    .[, cell_num := 1:.N]
+
+  dt1[dt2[, .(date, geometry, cell_num)], on = c("cell_num")] %>%
+    .[, .(hab_rating = mean(hab_rating), geometry = geometry), by = c("model_name", "prey_species", "life_stage", "cell_num")] %>%
+    st_as_sf()
+}
+
+make_multimodel_river_plot <- function(df, fill_option = NULL, scale_name = NULL, title = NULL) {
+
+  plot<-df %>%
+    mutate(model_name = fcase(
+      model_name == "regression", "Logistic Regression",
+      model_name == "rf", "Random Forest", 
+      model_name == "svm", "Support Vector Machine",
+      model_name == "glmnet", "GLMnet",
+      model_name == "nnet", "Neural Net",
+      model_name == "bag", "Bagged Neural Net",
+      model_name == "lightgbm", "LightGBM",
+      default = "XGBoost"
+      )) %>%
+    make_map(
+      fill = {{fill_option}},
+      scale_name = scale_name,
+      title = title
+    ) +
+    theme_classic(base_size = 12) +
+    theme(legend.position = "bottom") +
+    facet_wrap(~model_name)
+
+  
+  fill_option_as_str <- deparse(substitute(fill_option))
+
+  file <- glue::glue("{here::here('output', fill_option_as_str)}_all_models.jpg")
+  ggsave(filename = file, device = "jpg", height = 6, width = 8)
+  file
+
+}
+# make_multimodel_river_plot(summed_pred_predictions_w_hab, fill_option = "hab_rating", scale_name = "hab_rating")
+
+
+# t[t2[, .(date, geometry, cell_num)], on = c("cell_num")] %>%
+#   .[, .(hab_rating = mean(hab_rating), geometry = geometry), by = c("model_name", "prey_species", "life_stage", "cell_num")] %>%
+#   st_as_sf() %>%
+#   make_map(
+#     fill = hab_rating,
+#     scale_name = "Habitat rating"
+#   ) +
+#   facet_wrap(~model_name)

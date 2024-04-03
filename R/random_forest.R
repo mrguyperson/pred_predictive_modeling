@@ -1,4 +1,3 @@
-library(tidymodels)
 
 # set.seed(123)
 # splits <- initial_split(lmb, strata = seconds_per_transect)
@@ -9,22 +8,44 @@ library(tidymodels)
 # cores <- parallel::detectCores()
 
 
-rf_spec <- function(engine = "ranger", mode = "regression") {
-  rand_forest(mtry = tune(), min_n = tune(), trees = tune()) %>% 
-    # set_engine("ranger", num.threads = cores) %>% 
-    set_engine(engine) %>% 
-    set_mode(mode)
-}
+
 
 rf_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
   rec_formula <- formula(glue::glue("{y_var} ~ ."))
-  recipe(rec_formula, data = training_data) %>% 
-    update_role(all_of(id_cols), new_role = "ID") %>% 
-    step_dummy(all_nominal_predictors(), -pres_abs) %>% 
-    step_zv(all_predictors(), -pres_abs) %>% 
-    step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
-    themis::step_upsample(pres_abs) %>%
-    step_rm(all_of(col_to_drop))
+  if(y_var == "count") {
+    recipe(rec_formula, data = training_data) %>% 
+      update_role(all_of(id_cols), new_role = "ID") %>% 
+      step_impute_mean(all_numeric_predictors(), -pres_abs) %>%
+      # step_poly(all_numeric_predictors(), -pres_abs, degree = 2) %>%
+      step_rename_at(all_numeric_predictors(), -pres_abs, fn = ~ glue::glue("numeric_{.}")) %>%
+      step_rename_at(all_nominal_predictors(), -pres_abs, fn = ~ glue::glue("nominal_{.}")) %>%
+      step_dummy(all_nominal_predictors(), -pres_abs) %>%
+      # step_interact(terms = ~ starts_with("numeric"):starts_with("nominal")) %>%
+      # step_integer(all_nominal_predictors(), -pres_abs) %>%
+      step_zv(all_numeric_predictors(), -pres_abs) %>% 
+      step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
+      themis::step_upsample(pres_abs, 
+        over_ratio = tune()
+      ) %>%
+      step_rm(all_of(col_to_drop))
+  } else {
+      recipe(rec_formula, data = training_data) %>% 
+        update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
+        step_impute_mean(all_numeric_predictors(), -pres_abs) %>%
+        # step_poly(all_numeric_predictors(), -pres_abs, degree = 2) %>%
+        step_rename_at(all_numeric_predictors(), -pres_abs, fn = ~ glue::glue("numeric_{.}")) %>%
+        step_rename_at(all_nominal_predictors(), -pres_abs, fn = ~ glue::glue("nominal_{.}")) %>%
+        step_dummy(all_nominal_predictors(), -pres_abs) %>%
+        # step_interact(terms = ~ starts_with("numeric"):starts_with("nominal")) %>%
+        step_zv(all_numeric_predictors(), -pres_abs) %>% 
+        step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
+        themis::step_upsample(
+          pres_abs, 
+          over_ratio = tune()
+          # neighbors = tune("neighbors_over_ratio")
+          )
+  }
+
 }
 
 # data_prep <- prep(rec)
@@ -34,33 +55,33 @@ rf_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
 # set.seed(234)
 # folds <- vfold_cv(training_data)
 
-set_rf_grid <- function(training_data, size = 100) {
-    grid_latin_hypercube(
-      min_n(),
-      dials::finalize(mtry(), training_data),
-      trees(),
-      size = size
-  )
-}
+# set_rf_grid <- function(training_data, size = 100) {
+#     grid_latin_hypercube(
+#       min_n(),
+#       dials::finalize(mtry(), training_data),
+#       trees(),
+#       size = size
+#   )
+# }
 
 
 
 # show_best(tune_res, "rmse")
 
-plot_results <- function(results, metric) {
-  results %>%
-    collect_metrics() %>%
-    filter(.metric == metric) %>%
-    select(mean,mtry:min_n) %>%
-    pivot_longer(min_n:mtry,
-                values_to = "value",
-                names_to = "parameter"
-    ) %>%
-    ggplot(aes(value, mean, color = parameter)) +
-    geom_point(show.legend = FALSE) +
-    facet_wrap(~parameter, scales = "free_x") +
-    labs(x = NULL, y = metric)
-}
+# plot_results <- function(results, metric) {
+#   results %>%
+#     collect_metrics() %>%
+#     filter(.metric == metric) %>%
+#     select(mean,mtry:min_n) %>%
+#     pivot_longer(min_n:mtry,
+#                 values_to = "value",
+#                 names_to = "parameter"
+#     ) %>%
+#     ggplot(aes(value, mean, color = parameter)) +
+#     geom_point(show.legend = FALSE) +
+#     facet_wrap(~parameter, scales = "free_x") +
+#     labs(x = NULL, y = metric)
+# }
 # rf_grid <- grid_regular(
 #   mtry(range = c(5, 15)),
 #   min_n(range = c(5, 15)),
@@ -142,3 +163,40 @@ plot_results <- function(results, metric) {
 # fit %>% collect_metrics()
 # 
 
+# library(recipes)
+# library(modeldata)
+# data(hpc_data)
+# hpc_data0 <- hpc_data %>%
+#   select(-protocol, -day)
+# orig <- count(hpc_data0, class, name = "orig")
+# orig
+# up_rec <- recipe(class ~ ., data = hpc_data0) %>%
+#   # Bring the minority levels up to about 1000 each
+#   # 1000/2211 is approx 0.4523
+#   step_smote(class, over_ratio = 0.4523) %>%
+#   prep()
+# training <- up_rec %>%
+#   bake(new_data = NULL) %>%
+#   count(class, name = "training")
+# training
+# # Since `skip` defaults to TRUE, baking the step has no effect
+# baked <- up_rec %>%
+#   bake(new_data = hpc_data0) %>%
+#   count(class, name = "baked")
+# baked
+# # Note that if the original data contained more rows than the
+# # target n (= ratio * majority_n), the data are left alone:
+# orig %>%
+#   left_join(training, by = "class") %>%
+#   left_join(baked, by = "class")
+# library(ggplot2)
+# ggplot(circle_example, aes(x, y, color = class)) +
+#   geom_point() +
+#   labs(title = "Without SMOTE")
+# recipe(class ~ x + y, data = circle_example) %>%
+#   step_smote(class) %>%
+#   prep() %>%
+#   bake(new_data = NULL) %>%
+#   ggplot(aes(x, y, color = class)) +
+#   geom_point() +
+#   labs(title = "With SMOTE")

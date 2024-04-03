@@ -12,21 +12,44 @@
 # cores <- parallel::detectCores()
 svm_recipe <- function(training_data, y_var, col_to_drop, id_cols){
   rec_formula <- formula(glue::glue("{y_var} ~ ."))
-  recipe(rec_formula, data = training_data) %>% 
-    update_role(all_of(id_cols), new_role = "ID") %>% 
-    step_dummy(all_nominal_predictors(), -pres_abs) %>%
-    step_center(all_numeric_predictors(), -pres_abs) %>% 
-    step_zv(all_predictors(), -pres_abs) %>% 
-    step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
-    themis::step_upsample(pres_abs) %>%
-    step_rm(all_of(col_to_drop))
+  if(y_var == "count") {
+    recipe(rec_formula, data = training_data) %>% 
+      update_role(all_of(id_cols), new_role = "ID") %>% 
+      step_impute_mean(all_numeric_predictors(), -pres_abs) %>%
+      step_rename_at(all_numeric_predictors(), -pres_abs, fn = ~ glue::glue("numeric_{.}")) %>%
+      step_rename_at(all_nominal_predictors(), -pres_abs, fn = ~ glue::glue("nominal_{.}")) %>%
+      step_YeoJohnson(all_numeric_predictors(), -pres_abs) %>%
+      # step_poly(all_numeric_predictors(), -pres_abs, degree = 2) %>%
+      step_dummy(all_nominal_predictors(), -pres_abs) %>%
+      # step_interact(terms = ~ starts_with("numeric"):starts_with("nominal")) %>%
+      step_normalize(contains("numeric"), -pres_abs) %>% 
+      step_zv(all_predictors(), -pres_abs) %>% 
+      step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
+      themis::step_upsample(pres_abs, over_ratio = tune()) %>%
+      step_rm(all_of(col_to_drop))
+  } else {
+    recipe(rec_formula, data = training_data) %>% 
+      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
+      step_impute_mean(all_numeric_predictors(), -pres_abs) %>%
+      step_rename_at(all_numeric_predictors(), -pres_abs, fn = ~ glue::glue("numeric_{.}")) %>%
+      step_rename_at(all_nominal_predictors(), -pres_abs, fn = ~ glue::glue("nominal_{.}")) %>%
+      step_YeoJohnson(all_numeric_predictors(), -pres_abs) %>%
+      # step_poly(all_numeric_predictors(), degree = 2) %>%
+      step_dummy(all_nominal_predictors(), -pres_abs) %>%
+      # step_interact(terms = ~ starts_with("numeric"):starts_with("numeric")) %>%
+      # step_interact(terms = ~ starts_with("numeric"):starts_with("nominal")) %>%
+      step_zv(all_predictors(), -pres_abs) %>% 
+      step_normalize(contains("numeric"), -pres_abs) %>% 
+      step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
+      themis::step_upsample(
+          pres_abs, 
+          over_ratio = tune()
+          # neighbors = tune("neighbors_over_ratio")
+      )
+  }
 }
 
-svm_spec_rbf <- function(engine = "kernlab", mode){
-  svm_rbf(cost = tune(), rbf_sigma = tune(), margin = tune()) %>%
-    set_mode(mode) %>%
-    set_engine(engine)
-}
+
 
 # wf <-
 #   workflow() %>%
@@ -48,7 +71,7 @@ set_svm_grid <- function(training_data, size = 100){
   grid_latin_hypercube(
     cost(),
     rbf_sigma(),
-    svm_margin(),
+    # svm_margin(),
     size = size
   )
 }
@@ -165,3 +188,11 @@ set_svm_grid <- function(training_data, size = 100){
 #   xlab("observed number of fish") +
 #   ylab("predicted number of fish")
 
+
+# svm_recipe(training_data_svm_classification_lmb, "pres_abs", "count",delta_id_cols) %>% 
+#   prep() %>% 
+#   bake(new_data = NULL) %>% 
+#   pivot_longer(c(starts_with("numeric"), starts_with("nominal"))) %>% 
+#   select(-species, -count) %>%
+#   group_by(pres_abs, name) %>%
+#   count(name)

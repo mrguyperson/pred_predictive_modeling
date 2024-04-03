@@ -1,3 +1,29 @@
+lightgbm_spec <- function(engine = "lightgbm", mode = "regression"){
+  boost_tree(
+    trees = 1000,
+    tree_depth = tune(),
+    min_n = tune(),
+    # loss_reduction = tune(),
+    mtry = tune(),
+    # learn_rate = tune()
+) %>%
+  set_engine(engine) %>%
+  set_mode(mode)
+}
+
+set_lightgbm_grid <- function(training_data, size = 100){
+  grid_latin_hypercube(
+    trees(),
+    tree_depth(),
+    min_n(),
+    loss_reduction(),
+    dials::finalize(mtry(), training_data),
+    # learn_rate(),
+    size = size
+  )
+}
+
+
 # library(tidyverse)
 # library(tidymodels)
 # # library(doParallel)

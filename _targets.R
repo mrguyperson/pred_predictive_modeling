@@ -11,6 +11,7 @@ library(tibble)
 library(tidyr)
 library(rlang)
 library(crew)
+library(dplyr)
 
 # Set target options:
 tar_option_set(
@@ -35,131 +36,34 @@ tar_option_set(
     "shadow",
     "maptools",
     "sf",
-    "R.utils"
+    "R.utils",
+    "lightgbm",
+    "finetune",
+    "baguette",
+    "stacks",
+    "vip"
   ), # packages that your targets need to run
   format = "qs", # Optionally set the default storage format. qs is fast.
-  controller = crew::crew_controller_local(workers = 12)
+  controller = crew::crew_controller_local(workers = 8),
+  seed = 1
 )
 
 # Run the R scripts in the R/ folder with your custom functions:
 tar_source()
 
-seed <- c(1986)
-
-simple_models <- expand_grid(
-  tibble(
-    model = c("linear_regression", "logistic_regression"),
-    engine = c("lm", "glm"),
-    recipe_function = syms(c("reg_recipe", "reg_recipe")),
-    spec_function = syms(c("linear_reg_spec", "logistic_reg_spec")),
-  ),
-  tibble(
-    mode = c("classification", "regression"),
-    metric = c("roc_auc", "rmse"),
-    y_var = c("pres_abs", "count"),
-    col_to_drop = c("count", "pres_abs")
-  ),
-  tibble(
-    dataset = syms(c("delta_data_lmb", "fhast_data_smb", "fhast_data_sasq")),
-    species = c("lmb", "smb", "sasq"),
-    id_cols = syms(c("delta_id_cols", "fhast_id_cols", "fhast_id_cols")),
-    stratum = as.character(c("pres_abs", "pres_abs", "pres_abs"))
-    ),
-  seed
-) %>% dplyr::mutate(
-  run_name = glue::glue("{model}_{mode}_{species}")
-) %>% dplyr::filter(
-  !(grepl("fhast", dataset) & mode == "regression"),
-  !(grepl("linear", model) & mode == "classification"),
-  !(grepl("logistic", model) & mode == "regression")
+datasets <- tibble(
+  data = syms(c("delta_data_lmb", "fhast_data_smb", "fhast_data_sasq", "res_shore_data_lmb")),
+  stratum = as.character(c("pres_abs", "pres_abs", "pres_abs", "pres_abs")),
+  names = c("delta_lmb", "smb", "sasq", "res_shore_lmb")
 )
 
-fhast_predator_models <- expand_grid(
-  species = c("smb", "sasq"),
-  model_name = c("svm", "xgboost", "random_forest", "logistic_regression"),
-  mode = c("classification")
-) %>% dplyr::mutate(
-  model = syms(glue::glue("final_model_{model_name}_{mode}_{species}")),
-  run_name = glue::glue("{model_name}_{species}")
-) %>% 
-select(-mode)
-
-advanced_models <- expand_grid(
-  tibble(
-    model = c("random_forest", "svm", "xgboost"),
-    engine = c("ranger", "kernlab", "xgboost"),
-    recipe_function = syms(c("rf_recipe", "svm_recipe", "rf_recipe")),
-    spec_function = syms(c("rf_spec", "svm_spec_rbf", "xgb_spec")),
-    grid_function = syms(c("set_rf_grid", "set_svm_grid", "set_xgb_grid"))
-  ),
-  tibble(
-    mode = c("classification", "regression"),
-    metric = c("roc_auc", "rmse"),
-    y_var = c("pres_abs", "count"),
-    col_to_drop = c("count", "pres_abs")
-  ),
-  tibble(
-    dataset = syms(c("delta_data_lmb", "fhast_data_smb", "fhast_data_sasq")),
-    species = c("lmb", "smb", "sasq"),
-    id_cols = syms(c("delta_id_cols", "fhast_id_cols", "fhast_id_cols")),
-    stratum = as.character(c("pres_abs", "pres_abs", "pres_abs"))
-    ),
-  seed
-) %>% dplyr::mutate(
-  run_name = glue::glue("{model}_{mode}_{species}")
-) %>% dplyr::filter(
-  !(grepl("fhast", dataset) & mode == "regression"),
-  !(grepl("linear", model) & mode == "classification"),
-  !(grepl("logistic", model) & mode == "regression")
-)
-
-simple_models_mapped <- tar_map(
-  values = simple_models,
-  names = "run_name",
+data_splits_mapped <- tar_map(
+  unlist = FALSE,
+  values = datasets,
+  names = "names",
   tar_target(
     name = split,
-    command = split_with_seed(dataset, stratum, seed)
-  ),
-  tar_target(
-    name = training_data,
-    command = training(split)
-  ),
-  tar_target(
-    name = testing_data,
-    command = testing(split)
-  ),
-  tar_target(
-    name = recipes,
-    command = recipe_function(training_data, y_var, col_to_drop, id_cols)
-  ),
-  tar_target(
-    name = specs,
-    command = spec_function(engine, mode)
-  ),
-  tar_target(
-    name = workflows,
-    command = tune_wf(recipes, specs)
-  ),
-  tar_target(
-    name = final_fits,
-    command = tune::last_fit(workflows, split)
-  ),
-  tar_target(
-    name = performance_metrics,
-    command = mutate(unnest(final_fits, .metrics), name = run_name)
-  ),
-  tar_target(
-    name = final_model,
-    command = select_models(final_fits)
-  )
-)
-
-advanced_models_mapped <- tar_map(
-  values = advanced_models,
-  names = "run_name",
-  tar_target(
-    name = split,
-    command = rsample::initial_split(dataset, strata = stratum)
+    command = initial_split(data, strata = stratum)
   ),
   tar_target(
     name = training_data,
@@ -171,55 +75,407 @@ advanced_models_mapped <- tar_map(
   ),
   tar_target(
     name = folds,
-    command = vfold_cv(training_data, v = 4, repeats = 1, strata = stratum)
+    # command = bootstraps(training_data, times = 25, strata = stratum)
+    command = vfold_cv(training_data, v = 5, repeats = 2, strata = stratum)
+  )
+)
+
+workflowsets <- expand_grid(
+  tibble(
+    species = c("delta_lmb", "smb", "sasq", "res_shore_lmb"),
+    id_cols = syms(c("delta_id_cols", "fhast_id_cols", "fhast_id_cols", "res_shore_id_cols")),
+    fhast = c(FALSE, TRUE, TRUE, FALSE),
+    training_data = syms(glue::glue("training_data_{species}")),
+  ),
+  tibble(
+      mode = c("classification", "regression"),
+      metric = c("roc_auc", "rmse"),
+      y_var = c("pres_abs", "count"),
+      col_to_drop = c("count", "pres_abs")
+    )
+  ) %>% 
+  filter(!(fhast == TRUE & mode == "regression")) %>%
+  mutate(run_name = glue::glue("{mode}_{species}"))
+
+workflowsets_mapped <- tar_map(
+  values = workflowsets,
+  names = "run_name",
+  unlist = FALSE,
+  tar_target(
+    name = complete_workflow,
+    command = make_workflow_set(training_data, y_var, col_to_drop, id_cols)
   ),
   tar_target(
-    name = recipes,
-    command = recipe_function(training_data, y_var, col_to_drop, id_cols)
+    name = workflowsets_results,
+    command = get_workflow_set_results(complete_workflow),
+    deployment = "main"
+  )
+)
+
+model_selections <- expand_grid(
+  tibble(
+    species = c("smb", "sasq", "delta_lmb", "res_shore_lmb"),
+    fhast = c(TRUE, TRUE, FALSE, FALSE),
+    training_data = syms(glue::glue("training_data_{species}")),
+    id_cols = syms(c("fhast_id_cols", "fhast_id_cols", "delta_id_cols", "res_shore_id_cols"))
+  ),
+  tibble(
+    mode = c("classification", "regression"),
+    metric = c("roc_auc", "rmse"),
+    y_var = c("pres_abs", "count"),
+    col_to_drop = c("count", "pres_abs")
+  ),
+  model_name = c(
+      "svm", 
+      "xgb", 
+      "rf", 
+      "regression",
+      "glmnet",
+      "nnet",
+      "bag"
+      )
+) %>%
+  filter(!(fhast == TRUE & mode == "regression")) %>%
+  mutate(
+    # workflowset_results = syms(glue::glue("workflowsets_results_{mode}_{species}")),
+    split = syms(glue::glue("split_{species}")),
+    run_name = glue::glue("{model_name}_{mode}_{species}")
+  )
+
+model_selections_mapped <- tar_map(
+  values = model_selections,
+  names = "run_name",
+  unlist = FALSE,
+  # tar_target(
+  #   name = subset,
+  #   command = subset_wf_results(workflowset_results, model_name),
+  #   deployment = "main"
+  # ),
+  # tar_target(
+  #   name = spec,
+  #   command = model_spec(mode = mode)
+  # ),
+    tar_target(
+    name = complete_workflow,
+    command = make_workflow_set(model_name, training_data, y_var, col_to_drop, id_cols)
   ),
   tar_target(
-    name = specs,
-    command = spec_function(engine, mode)
+    name = workflowsets_results,
+    command = get_workflow_set_results(complete_workflow),
+    deployment = "main"
   ),
   tar_target(
-    name = workflows,
-    command = tune_wf(recipes, specs)
+    name = best_model,
+    command = workflowsets_results %>% rank_results(rank_metric = metric, select_best = TRUE),
+    deployment = "main"
   ),
   tar_target(
-    name = mtry_data_frame,
-    command = make_mtry_data_frame(training_data, id_cols, col_to_drop, y_var)
-  ),
-  tar_target(
-    name = grids,
-    command = grid_function(mtry_data_frame, size = 30)
+    name = best_model_name,
+    command = best_model$wflow_id[[1]]
   ),
   tar_target(
     name = tuned_results,
-    command = tune_model_grid(workflows, folds, grids)
+    command = extract_workflow_set_result(workflowsets_results, best_model_name),
+    deployment = "main"
   ),
   tar_target(
-    name = best_models,
-    command = tune::select_best(tuned_results, metric)
+    name = best_fit,
+    command = fit_best(tuned_results, metric),
+    deployment = "main"
   ),
   tar_target(
-    name = finalized_models,
-    command = tune::finalize_model(specs, best_models)
+    name = metrics,
+    command = make_metric_sets(mode)
   ),
   tar_target(
-    name = final_workflows,
-    command = tune_wf(recipes, finalized_models)
-  ),
-  tar_target(
-    name = final_fits,
-    command = tune::last_fit(final_workflows, split)
-  ),
-  tar_target(
-    name = performance_metrics,
-    command = mutate(unnest(final_fits, .metrics), name = run_name)
+    name = final_fit,
+    command = last_fit(best_fit, split, metrics = metrics),
+    deployment = "main"
   ),
   tar_target(
     name = final_model,
-    command = select_models(final_fits)
+    command = select_models(final_fit),
+    deployment = "main"
+  ),
+  tar_target(
+    name = performance_metrics,
+    command = mutate(unnest(final_fit, .metrics), name = run_name, wflow_id = best_model_name)
+  ),
+    tar_target(
+    name = vip_plot,
+    command = plot_model_vip(final_model),
+    format = "file"
+  )
+)
+
+# simple_models <- expand_grid(
+#   tibble(
+#     model = c("linear_regression", "logistic_regression"),
+#     engine = c("lm", "glm"),
+#     recipe_function = syms(c("reg_recipe", "reg_recipe")),
+#     spec_function = syms(c("linear_reg_spec", "logistic_reg_spec")),
+#   ),
+#   tibble(
+#     mode = c("classification", "regression"),
+#     metric = c("roc_auc", "rmse"),
+#     y_var = c("pres_abs", "count"),
+#     col_to_drop = c("count", "pres_abs")
+#   ),
+#   tibble(
+#     dataset = syms(c("delta_data_lmb", "fhast_data_smb", "fhast_data_sasq")),
+#     species = c("lmb", "smb", "sasq"),
+#     id_cols = syms(c("delta_id_cols", "fhast_id_cols", "fhast_id_cols")),
+#     folds = syms(c("folds_lmb", "folds_smb", "folds_sasq")),
+#     split = syms(c("split_lmb", "split_smb", "split_sasq")),
+#     training_data = syms(c("training_data_lmb", "training_data_smb", "training_data_sasq"))
+#     ),
+# ) %>% dplyr::mutate(
+#   run_name = glue::glue("{model}_{mode}_{species}")
+# ) %>% dplyr::filter(
+#   !(grepl("fhast", dataset) & mode == "regression"),
+#   !(grepl("linear", model) & mode == "classification"),
+#   !(grepl("logistic", model) & mode == "regression")
+# )
+
+fhast_predator_models <- expand_grid(
+  species = c("smb", "sasq"),
+  model_name = c(
+    "svm", 
+    "xgb", 
+    "rf", 
+    "regression",
+    "glmnet",
+    "nnet",
+    "bag"
+    # "lightgbm"
+    ),
+  mode = c("classification")
+) %>% dplyr::mutate(
+  model = syms(glue::glue("final_model_{model_name}_{mode}_{species}")),
+  run_name = glue::glue("{model_name}_{species}")
+) %>% 
+select(-mode)
+
+stack_model_data <- expand_grid(
+  species = c("smb", "sasq"),
+  model_name = c(
+    "svm", 
+    "xgb", 
+    "rf", 
+    "regression",
+    "glmnet",
+    "nnet",
+    "bag"
+    # "lightgbm"
+    ),
+  mode = c("classification")
+  ) %>% dplyr::mutate(
+    model = syms(glue::glue("tuned_results_{model_name}_{mode}_{species}"))
+  ) %>% 
+  select(-mode) %>%
+  # filter(
+    # model_name != "bag_nnet", 
+    # model_name != "logistic_regression") %>%
+  pivot_wider(names_from = model_name, values_from = model)
+
+# advanced_models <- expand_grid(
+#   tibble(
+#     model = c(
+#       "random_forest", 
+#       "svm", 
+#       "xgboost",
+#       "glmnet",
+#       "nnet",
+#       "bag_nnet"
+#       # "lightgbm"
+#       ),
+#     engine = c(
+#       "ranger", 
+#       "kernlab", 
+#       "xgboost",
+#       "glmnet",
+#       "nnet",
+#       "nnet"
+#       # "lightgbm"
+
+#       ),
+#     recipe_function = syms(c(
+#       "rf_recipe", 
+#       "svm_recipe", 
+#       "xgb_recipe",
+#       "reg_recipe",
+#       "nnet_recipe",
+#       "nnet_recipe"
+#       # "rf_recipe"
+#       )),
+#     spec_function = syms(c(
+#       "rf_spec", 
+#       "svm_spec_rbf", 
+#       "xgb_spec",
+#       "glmnet_spec",
+#       "nnet_spec",
+#       "bag_nnet_spec"
+#       # "lightgbm_spec"
+#       )),
+#     size = c(
+#       50,
+#       25,
+#       100,
+#       30,
+#       50,
+#       50
+#     ),
+#     # grid_function = syms(c(
+#     #   "set_rf_grid", 
+#     #   "set_svm_grid", 
+#     #   "set_xgb_grid",
+#     #   "set_glmnet_grid",
+#     #   "set_nnet_grid",
+#     #   "set_nnet_grid",
+
+#     #   )),
+#     tune_function = syms(c(
+#       "tune_model_grid_race",
+#       "tune_model_grid_race",
+#       "tune_model_grid_race",
+#       "tune_model_grid_race",
+#       "tune_model_grid_race",
+#       # "tune_model_grid_race",
+#       "tune_model_grid_race"
+#     ))
+#   ),
+#   tibble(
+#     mode = c("classification", "regression"),
+#     metric = c("roc_auc", "rmse"),
+#     y_var = c("pres_abs", "count"),
+#     col_to_drop = c("count", "pres_abs")
+#   ),
+#   tibble(
+#     dataset = syms(c("delta_data_lmb", "fhast_data_smb", "fhast_data_sasq")),
+#     species = c("lmb", "smb", "sasq"),
+#     id_cols = syms(c("delta_id_cols", "fhast_id_cols", "fhast_id_cols")),
+#     split = syms(c("split_lmb", "split_smb", "split_sasq")),
+#     training_data = syms(c("training_data_lmb", "training_data_smb", "training_data_sasq")),
+#     folds = syms(c("folds_lmb", "folds_smb", "folds_sasq"))
+#     ),
+# ) %>% dplyr::mutate(
+#   run_name = glue::glue("{model}_{mode}_{species}")
+# ) %>% dplyr::filter(
+#   !(grepl("fhast", dataset) & mode == "regression"),
+#   !(grepl("linear", model) & mode == "classification"),
+#   !(grepl("logistic", model) & mode == "regression"),
+#   !(grepl("glmnet", model) & mode == "regression")
+# )
+
+# simple_models_mapped <- tar_map(
+#   values = simple_models,
+#   names = "run_name",
+#   tar_target(
+#     name = recipes,
+#     command = recipe_function(training_data, y_var, col_to_drop, id_cols)
+#   ),
+#   tar_target(
+#     name = specs,
+#     command = spec_function(engine, mode)
+#   ),
+#   tar_target(
+#     name = metrics,
+#     command = make_metric_sets(mode)
+#   ),
+#   tar_target(
+#     name = workflows,
+#     command = tune_wf(recipes, specs)
+#   ),
+#   tar_target(
+#     name = tuned_results,
+#     command = simple_model_resamples(workflows, folds, metrics),
+#     deployment = "main"
+#   ),
+#   tar_target(
+#     name = final_fits,
+#     command = tune::last_fit(workflows, split, metrics = metrics)
+#   ),
+#   tar_target(
+#     name = performance_metrics,
+#     command = mutate(unnest(final_fits, .metrics), name = run_name)
+#   ),
+#   tar_target(
+#     name = final_model,
+#     command = select_models(final_fits)
+#   )
+# )
+
+# advanced_models_mapped <- tar_map(
+#   values = advanced_models,
+#   names = "run_name",
+#   tar_target(
+#     name = recipes,
+#     command = recipe_function(training_data, y_var, col_to_drop, id_cols)
+#   ),
+#   tar_target(
+#     name = specs,
+#     command = spec_function(engine, mode)
+#   ),
+#   tar_target(
+#     name = workflows,
+#     command = tune_wf(recipes, specs)
+#   ),
+#   tar_target(
+#     name = mtry_data_frame,
+#     command = make_mtry_data_frame(training_data, id_cols, col_to_drop, y_var)
+#   ),
+#   tar_target(
+#     name = grids,
+#     command = set_grid(workflows, mtry_data_frame, size = size)
+#   ),
+#     tar_target(
+#     name = metrics,
+#     command = make_metric_sets(mode)
+#   ),
+#   tar_target(
+#     name = tuned_results,
+#     command = tune_function(workflows, folds, grids, metrics),
+#     deployment = "main"
+#   ),
+#   tar_target(
+#     name = best_models,
+#     command = tune::select_best(tuned_results, metric)
+#   ),
+#   tar_target(
+#     name = final_workflows,
+#     command = tune::finalize_workflow(workflows, best_models)
+#   ),
+#   # tar_target(
+#   #   name = final_workflows,
+#   #   command = tune_wf(recipes, finalized_models)
+#   # ),
+#   tar_target(
+#     name = final_fits,
+#     command = tune::last_fit(final_workflows, split, metrics = metrics)
+#   ),
+#   tar_target(
+#     name = performance_metrics,
+#     command = mutate(unnest(final_fits, .metrics), name = run_name)
+#   ),
+#   tar_target(
+#     name = final_model,
+#     command = select_models(final_fits)
+#   ),
+#   tar_target(
+#     name = vip_plot,
+#     command = plot_model_vip(final_model),
+#     format = "file"
+#   )
+# )
+
+stacked_model_mapped <- tar_map(
+  unlist = FALSE,
+  values = stack_model_data,
+  names = "species",
+  tar_target(
+    name = stacked_model,
+    command = build_stack_model(logistic_regression, xgboost, random_forest, svm, glmnet, nnet, bag_nnet),
+    deployment = "main"
   )
 )
 
@@ -229,7 +485,7 @@ fhast_model_predictions <- tar_map(
     names = "run_name",
     tar_target(
       predator_hab_ratings,
-      make_pred_prediciton_summary(species, model, model_name, df_for_pred_models) %>% mutate(substrate = unlist(substrate_option)),
+      make_pred_prediction_summary(species, model, model_name, df_for_pred_models) %>% mutate(substrate = unlist(substrate_option)),
       pattern = map(df_for_pred_models, substrate_option),
       iteration = "list"
     ),
@@ -277,6 +533,16 @@ list(
     command = dplyr::filter(fhast_data, species == "bass")
   ),
   tar_target(
+    name = res_shore_fish_paths,
+    command = get_res_fish_shore_paths(),
+    format = "file"
+  ),
+  tar_target(
+    name = res_shore_data_lmb,
+    command = get_res_shore_data(res_shore_fish_paths)
+  ),
+  data_splits_mapped,
+  tar_target(
     name = delta_id_cols,
     command = c("regioncode", "starttime", "subregion", "sampledate", "segment_number", "seconds_per_transect")
   ),
@@ -284,8 +550,14 @@ list(
     name = fhast_id_cols,
     command = c("species")
   ),
-  simple_models_mapped,
-  advanced_models_mapped,
+  tar_target(
+    name = res_shore_id_cols,
+    command = c("date", "station_number")
+  ),
+  # workflowsets_mapped,
+  model_selections_mapped,
+  # simple_models_mapped,
+  # advanced_models_mapped,
   ##### FHAST STUFF #####
   tar_target(
       name = fhast_base_folder,
@@ -726,49 +998,47 @@ list(
   ),
   tar_target(
     name = df_for_pred_models,
-    command = make_df_for_pred_predicitons(habitat_variable, col_names_fhast_pred_models, substrate_option),
+    command = make_df_for_pred_predictions(habitat_variable, col_names_fhast_pred_models, substrate_option),
     pattern = map(substrate_option),
     iteration = "list"
   ),
-  # tar_target(
-  #   name = table_of_fhast_models,
-  #   command = make_table_of_fhast_models()
-  # ),
   fhast_model_predictions,
-  # tar_target(
-  #   fhast_models,
-  #   make_list_of_fhast_hab_ratings()
-  # ),
-  # tar_combine(
-  #   name = pred_prediciton_summary,
-  #   fhast_model_predictions[["predator_hab_ratings"]],
-  #   command = dplyr::bind_rows(!!!.x) %>%
-  #     pivot_wider(names_from = species,
-  #     values_from = hab_rating,
-  #     values_fn = list) %>%
-  #     rename_with(~glue::glue("hab_rating_{.x}"), -model_name)
-
-  # ),
   tar_combine(
-    name = pred_prediciton_summary,
+    name = pred_prediction_summary,
     fhast_model_predictions[["predator_hab_ratings_combined"]],
     command = dplyr::bind_rows(!!!.x) %>%
-      expand_grid(fish_combos) %>%
+      expand_grid(fish_combos)
+  ),
+  tar_target(
+    name = pred_prediction_summary_grouped,
+    command = pred_prediction_summary %>%
       group_by(prey_species, model_name, life_stage, substrate) %>%
       targets::tar_group(),
     iteration = "group"
-      # pivot_wider(names_from = species,
-      # values_from = hab_rating,
-      # values_fn = list) %>%
-      # rename_with(~glue::glue("hab_rating_{.x}"), -model_name)
-
+  ),
+  tar_target(
+    name = pred_prediction_differences,
+    command = make_pred_model_difference_df(pred_prediction_summary_grouped),
+    iteration = "group"
+  ),
+  tar_target(
+    name = summed_pred_predction_differences,
+    command = make_summed_pred_model_df(pred_prediction_differences)
+  ),
+  tar_target(
+    name = summed_pred_predictions,
+    command = make_summed_pred_model_df(pred_prediction_summary_grouped)
+  ),
+  tar_target(
+    name = summed_pred_predictions_w_hab,
+    command = join_pred_and_hab(summed_pred_predictions, habitat_variable)
   ),
   tar_target(
     name = data_summary,
     command = make_data_summary(
-      fish_parm, habitat_variable, pred_parm, pred_prediciton_summary, habitat_parm, juvenile_run, pct_cover_model, dis_to_cover_model
+      fish_parm, habitat_variable, pred_parm, pred_prediction_summary_grouped, habitat_parm, juvenile_run, pct_cover_model, dis_to_cover_model
     ),
-    pattern = map(pred_prediciton_summary),
+    pattern = map(pred_prediction_summary_grouped),
     iteration = "list"
   ),
   tar_target(
@@ -822,16 +1092,42 @@ list(
     pattern = map(map_data_full),
     iteration = "list",
     format = "file"
+  ),
+  tar_combine(
+    name = performance_summary,
+    model_selections_mapped[["performance_metrics"]],
+    command = dplyr::bind_rows(!!!.x)
+  ),
+  # tar_combine(
+  #   name = simple_performance_summary,
+  #   simple_models_mapped[["performance_metrics"]],
+  #   command = dplyr::bind_rows(!!!.x)
+  # ),
+  # tar_target(
+  #   name = total_performance_summary,
+  #   command = dplyr::bind_rows(adv_performance_summary, simple_performance_summary)
+  # ),
+  # tar_target(
+  #   name = fhast_performance,
+  #   command = dplyr::filter(total_performance_summary, !grepl("lmb", name))
+  # ),
+  tar_target(
+    name = pred_histograms,
+    command = make_pred_model_histograms(pred_prediction_summary_grouped),
+    format = "file"
+  ),
+  tar_target(
+    name = multimodel_pred_hab_map,
+    command = make_multimodel_river_plot(
+      df = summed_pred_predictions_w_hab, 
+      fill_option = hab_rating, 
+      scale_name = "Predator Habitat Rating"),
+    format = "file"
   )
+  # stacked_model_mapped
 
 
 
 
   ##### Skipped adult run stuff
 )
-
-# test <- pred_prediciton_summary %>% filter(tar_group == 1)
-
-# make_data_summary(
-#     fish_parm, variable_habitat = habitat_variable, pred_parm, test, habitat_parm, juvenile_run, pct_cover_model, dis_to_cover_model
-# )

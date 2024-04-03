@@ -11,6 +11,7 @@ RUN install2.r languageserver \
     tidymodels \
     kernlab \
     bonsai \
+    lightgbm \
     ranger \
     xgboost \
     poissonreg \
@@ -31,7 +32,15 @@ RUN install2.r languageserver \
     leaflet \
     nlrx \
     devtools \
-    qs 
+    qs \
+    finetune \
+    lme4 \
+    glmnet \
+    nnet \
+    baguette \
+    stacks \
+    vip \ 
+    NeuralNetTools
     # shadow \
     # maptools
 
