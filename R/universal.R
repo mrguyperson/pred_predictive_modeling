@@ -190,6 +190,7 @@ plot_model_vip <- function(model) {
     # }
 
     plot <- vip(model,
+        method = "permute",
         geom = "col",
         aesthetics = list(
             color = "black", 

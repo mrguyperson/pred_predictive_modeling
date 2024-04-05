@@ -52,9 +52,9 @@ tar_option_set(
 tar_source()
 
 datasets <- tibble(
-  data = syms(c("delta_data_lmb", "fhast_data_smb", "fhast_data_sasq", "res_shore_data_lmb")),
-  stratum = as.character(c("pres_abs", "pres_abs", "pres_abs", "pres_abs")),
-  names = c("delta_lmb", "smb", "sasq", "res_shore_lmb")
+  data = syms(c("delta_data_lmb", "fhast_data_smb", "fhast_data_sasq")),
+  stratum = as.character(c("pres_abs", "pres_abs", "pres_abs")),
+  names = c("delta_lmb", "smb", "sasq")
 )
 
 data_splits_mapped <- tar_map(
@@ -82,16 +82,28 @@ data_splits_mapped <- tar_map(
 
 workflowsets <- expand_grid(
   tibble(
-    species = c("delta_lmb", "smb", "sasq", "res_shore_lmb"),
-    id_cols = syms(c("delta_id_cols", "fhast_id_cols", "fhast_id_cols", "res_shore_id_cols")),
+    species = c("delta_lmb", "smb", "sasq"),
+    id_cols = syms(c("delta_id_cols", "fhast_id_cols", "fhast_id_cols")),
     fhast = c(FALSE, TRUE, TRUE, FALSE),
     training_data = syms(glue::glue("training_data_{species}")),
   ),
   tibble(
-      mode = c("classification", "regression"),
-      metric = c("roc_auc", "rmse"),
-      y_var = c("pres_abs", "count"),
-      col_to_drop = c("count", "pres_abs")
+      mode = c(
+        "classification"
+        # "regression"
+        ),
+      metric = c(
+        "roc_auc"
+        # "rmse"
+        ),
+      y_var = c(
+        "pres_abs"
+        # "count"
+        ),
+      col_to_drop = c(
+        "count"
+        # "pres_abs"
+        )
     )
   ) %>% 
   filter(!(fhast == TRUE & mode == "regression")) %>%
@@ -114,16 +126,16 @@ workflowsets_mapped <- tar_map(
 
 model_selections <- expand_grid(
   tibble(
-    species = c("smb", "sasq", "delta_lmb", "res_shore_lmb"),
+    species = c("smb", "sasq", "delta_lmb"),
     fhast = c(TRUE, TRUE, FALSE, FALSE),
     training_data = syms(glue::glue("training_data_{species}")),
-    id_cols = syms(c("fhast_id_cols", "fhast_id_cols", "delta_id_cols", "res_shore_id_cols"))
+    id_cols = syms(c("fhast_id_cols", "fhast_id_cols", "delta_id_cols"))
   ),
   tibble(
-    mode = c("classification", "regression"),
-    metric = c("roc_auc", "rmse"),
-    y_var = c("pres_abs", "count"),
-    col_to_drop = c("count", "pres_abs")
+    mode = c("classification"),
+    metric = c("roc_auc"),
+    y_var = c("pres_abs"),
+    col_to_drop = c("count")
   ),
   model_name = c(
       "svm", 
