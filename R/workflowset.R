@@ -1,19 +1,13 @@
 
-make_workflow_set <- function(model_name, training_data, y_var, col_to_drop, id_cols) {
+make_workflow_set <- function(model_name, training_data) {
     model_name <- as.character(model_name)
+    grid_size = 30
     # set recipes
-
-    recipe_list <- make_recipe_list(training_data, y_var, col_to_drop, id_cols)[[model_name]]
-
-    # set mode
-    mode <- fifelse(y_var == "count", "regression", "classification")
-
-    model_list <- list(make_model_list(mode)[[model_name]])
-
+    recipe_list <- make_recipe_list(training_data)[[model_name]]
+    model_list <- list(make_model_list(mode = "classification")[[model_name]])
     names(model_list) <- model_name
     # set folds
-    folds <- vfold_cv(training_data, v = 4, repeats = 3, strata = pres_abs)
-    mtry_data <- make_mtry_data_frame(training_data, y_var, col_to_drop, id_cols)
+    folds <- vfold_cv(training_data, v = 5, repeats = 2, strata = "pres_abs")
 
     # basic workflow set
     workflow_set(
@@ -21,7 +15,7 @@ make_workflow_set <- function(model_name, training_data, y_var, col_to_drop, id_
         models = model_list, 
         # cross = TRUE
         ) %>%
-        add_grids(mtry_data, size = 40) %>%
+        add_grids(model_name, select(training_data, -pres_abs), size = grid_size) %>%
         option_add(
             resamples = folds, 
             control = control_race(
@@ -29,14 +23,17 @@ make_workflow_set <- function(model_name, training_data, y_var, col_to_drop, id_
                 save_pred = TRUE, 
                 save_workflow = TRUE
                 ),
-            metrics = make_metric_sets(mode)
+            metrics = make_metric_sets(mode = "classification")
         )
 }
 
-add_grids <- function(wf_set, mtry_data, size) {
+add_grids <- function(wf_set, model_name, training_data, size) {
+    if (model_name %in% c("regression", "fhast")) {
+        return(wf_set)
+    }
     ids <- wf_set$wflow_id
     wfs <- map(ids, ~ extract_workflow(wf_set, .x))
-    grids <- map(wfs, ~set_grid(.x, mtry_data, size))
+    grids <- map(wfs, ~set_grid(.x, training_data, size))
     names(grids) <- ids
 
     for( name in names(grids)) {
@@ -60,16 +57,16 @@ subset_wf_results <- function(workflow_set, model_type) {
         filter(grepl(model_type, wflow_id))
 }
 
-make_recipe_list <- function(training_data, y_var, col_to_drop, id_cols) {
-    fhast <- fhast_recipe(training_data, y_var, col_to_drop, id_cols)
-    basic <- basic_recipe(training_data, y_var, col_to_drop, id_cols)
-    yj <- yj_recipe(training_data, y_var, col_to_drop, id_cols)
-    poly <- poly_recipe(training_data, y_var, col_to_drop, id_cols)
-    poly_yj <- poly_yj_recipe(training_data, y_var, col_to_drop, id_cols)
-    interaction <- interaction_recipe(training_data, y_var, col_to_drop, id_cols)
-    interaction_yj <- interaction_yj_recipe(training_data, y_var, col_to_drop, id_cols)
-    interaction_poly <- interaction_poly_recipe(training_data, y_var, col_to_drop, id_cols)
-    interaction_poly_yj <- interaction_poly_yj_recipe(training_data, y_var, col_to_drop, id_cols)
+make_recipe_list <- function(training_data) {
+    fhast <- fhast_recipe(training_data)
+    basic <- basic_recipe(training_data)
+    yj <- yj_recipe(training_data)
+    poly <- poly_recipe(training_data)
+    poly_yj <- poly_yj_recipe(training_data)
+    interaction <- interaction_recipe(training_data)
+    interaction_yj <- interaction_yj_recipe(training_data)
+    interaction_poly <- interaction_poly_recipe(training_data)
+    interaction_poly_yj <- interaction_poly_yj_recipe(training_data)
 
     long <- list(
             fhast = fhast,
@@ -100,6 +97,10 @@ make_recipe_list <- function(training_data, y_var, col_to_drop, id_cols) {
             yj = yj, 
             poly_yj = poly_yj
     )
+    
+    fhast <- list(
+        fhast = fhast
+    )
 
     list(
         regression = long,
@@ -108,7 +109,8 @@ make_recipe_list <- function(training_data, y_var, col_to_drop, id_cols) {
         xgb = short,
         svm = medium,
         nnet = super_short,        
-        bag = super_short
+        bag = super_short,
+        fhast = fhast
         )
 }
 
@@ -120,72 +122,7 @@ make_model_list <- function(mode) {
         nnet = nnet_spec(mode = mode),
         bag = bag_spec(mode = mode),
         regression = regression_spec(mode = mode),
-        glmnet = glmnet_spec(mode = mode)
+        glmnet = glmnet_spec(mode = mode),
+        fhast = regression_spec(mode = mode)
         )
 }
-
-# tar_load(res_shore_id_cols)
-# data <- get_res_shore_data(get_res_fish_shore_paths())
-# training_data <- initial_split(data, strata = pres_abs) %>% training()
-
-# mtry_data <- make_mtry_data_frame(training_data, "pres_abs", "count", res_shore_id_cols)
-
-# wf <- make_workflow_set("rf", training_data, "pres_abs", "count", res_shore_id_cols)
-
-
-# rec <-  interaction_recipe(training_data, "count", "pres_abs", res_shore_id_cols)
-
-# spec <- regression_spec(mode = "regression")
-
-# wf <- workflow() %>%
-#     add_recipe(rec) %>%
-#     add_model(spec)
-# unregister_dopar <- function() {
-#   env <- foreach:::.foreachGlobals
-#   rm(list=ls(name=env), pos=env)
-# }
-
-# unregister_dopar()
-# num_cores <- parallel::detectCores(logical = FALSE)
-# cl <- parallel::makeCluster(num_cores)
-# doParallel::registerDoParallel(cl)
-# results <- finetune::tune_race_anova(
-#     wf,
-#     resamples = vfold_cv(training_data, v = 5, repeats = 2),
-#     grid = set_grid(wf, training_data, size= 20),
-#     control = finetune::control_race(
-#                 verbose_elim = TRUE, 
-#                 save_pred = TRUE, 
-#                 save_workflow = TRUE),
-#     metrics = metric_set(rmse)
-# )
-
-# finetune::tune_race_anova(
-#     wf,
-#     resamples = vfold_cv(training_data, v = 5, repeats = 2),
-#     grid = set_grid(wf, training_data, size= 20),
-#     control = finetune::control_race(
-#                 verbose_elim = TRUE, 
-#                 save_pred = TRUE, 
-#                 save_workflow = TRUE),
-#     metrics = metric_set(rmse)
-# ) 
-
-
-# unregister_dopar()
-# results %>% collect_metrics()
-
-# tar_load(training_data_res_shore_lmb)
-# tar_load(res_shore_id_cols)
-# res<-make_workflow_set("rf", training_data_res_shore_lmb, "pres_abs", "count", res_shore_id_cols) %>% get_workflow_set_results()
-# res %>% rank_results(rank_metric = "roc_auc", select_best = TRUE)
-# # tar_load(delta_data_lmb)
-# tar_load(fhast_data_smb)
-# tar_load(fhast_data_sasq)
-# data %>%
-#     group_by(pres_abs) %>%
-#     summarize(across(where(is.numeric), mean))
-
-# fhast_data_smb %>%
-#     group_by(pres_abs) %>%
-#     count(shade)

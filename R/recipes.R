@@ -1,8 +1,7 @@
-basic_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+basic_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       step_normalize(all_numeric_predictors()) %>% 
       step_nzv(all_predictors(), -pres_abs) %>%
@@ -10,16 +9,14 @@ basic_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
       # step_zv(all_predictors(), -pres_abs) %>% 
       step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
       themis::step_upsample(
-          pres_abs, 
-          over_ratio = tune()
+          pres_abs
       )
 }
 
-interaction_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+interaction_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       step_normalize(all_numeric_predictors()) %>% 
       step_rename_at(all_numeric_predictors(), -pres_abs, fn = ~ glue::glue("numeric_{.}")) %>%
@@ -30,16 +27,14 @@ interaction_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
       # step_zv(all_predictors(), -pres_abs) %>% 
       step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
       themis::step_upsample(
-          pres_abs, 
-          over_ratio = tune()
+          pres_abs
       )
 }
 
-yj_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+yj_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       step_YeoJohnson(all_numeric_predictors(), -pres_abs) %>%
       step_normalize(all_numeric_predictors()) %>% 
@@ -47,16 +42,14 @@ yj_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
       step_dummy(all_nominal_predictors(), -pres_abs) %>%
       step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
       themis::step_upsample(
-          pres_abs, 
-          over_ratio = tune()
+          pres_abs
       )
 }
 
-interaction_yj_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+interaction_yj_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       step_YeoJohnson(all_numeric_predictors(), -pres_abs) %>%
       step_normalize(all_numeric_predictors()) %>% 
@@ -68,17 +61,15 @@ interaction_yj_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
       # step_zv(all_predictors(), -pres_abs) %>% 
       step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
       themis::step_upsample(
-          pres_abs, 
-          over_ratio = tune()
+          pres_abs
       )
 }
 
 
-poly_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+poly_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       step_poly(all_numeric_predictors(), degree = 2) %>%
       step_normalize(all_numeric_predictors()) %>% 
@@ -86,16 +77,14 @@ poly_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
       step_dummy(all_nominal_predictors(), -pres_abs) %>%
       step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
       themis::step_upsample(
-          pres_abs, 
-          over_ratio = tune()
+          pres_abs
       )
 }
 
-interaction_poly_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+interaction_poly_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       step_poly(all_numeric_predictors(), degree = 2) %>%
       step_normalize(all_numeric_predictors()) %>% 
@@ -107,16 +96,14 @@ interaction_poly_recipe <- function(training_data, y_var, col_to_drop, id_cols) 
       # step_zv(all_predictors(), -pres_abs) %>% 
       step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
       themis::step_upsample(
-          pres_abs, 
-          over_ratio = tune()
+          pres_abs
       )
 }
 
-poly_yj_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+poly_yj_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       step_poly(all_numeric_predictors(), degree = 2) %>%
       step_YeoJohnson(all_numeric_predictors(), -pres_abs) %>%
@@ -125,16 +112,14 @@ poly_yj_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
       step_dummy(all_nominal_predictors(), -pres_abs) %>%
       step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
       themis::step_upsample(
-          pres_abs, 
-          over_ratio = tune()
+          pres_abs
       )
 }
 
-interaction_poly_yj_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+interaction_poly_yj_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       step_poly(all_numeric_predictors(), degree = 2) %>%
       step_YeoJohnson(all_numeric_predictors(), -pres_abs) %>%
@@ -147,33 +132,29 @@ interaction_poly_yj_recipe <- function(training_data, y_var, col_to_drop, id_col
       # step_zv(all_predictors(), -pres_abs) %>% 
       step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
       themis::step_upsample(
-          pres_abs, 
-          over_ratio = tune()
+          pres_abs
       )
 }
 
-pca_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+pca_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       step_nzv(all_predictors(), -pres_abs) %>% 
       step_normalize(all_numeric_predictors()) %>% 
       step_dummy(all_nominal_predictors(), -pres_abs) %>%
       step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
       themis::step_upsample(
-          pres_abs, 
-          over_ratio = tune()
+          pres_abs
       ) %>%
       step_pca(all_numeric_predictors(), num_comp = tune())
 }
 
-pca_yj_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+pca_yj_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       step_YeoJohnson(all_numeric_predictors(), -pres_abs) %>%
       step_nzv(all_predictors(), -pres_abs) %>% 
@@ -181,24 +162,22 @@ pca_yj_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
       step_dummy(all_nominal_predictors(), -pres_abs) %>%
       step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
       themis::step_upsample(
-          pres_abs, 
-          over_ratio = tune()
+          pres_abs
       ) %>%
       step_pca(all_numeric_predictors(), num_comp = tune())
 }
 
-fhast_recipe <- function(training_data, y_var, col_to_drop, id_cols) {
-  rec_formula <- make_formula(y_var)
-    recipe(rec_formula, data = training_data) %>% 
-      update_role(all_of(id_cols), all_of(col_to_drop), new_role = "ID") %>% 
-      step_naomit(all_predictors(), all_of(y_var)) %>%
+fhast_recipe <- function(training_data) {
+  
+    recipe(pres_abs ~ ., data = training_data) %>% 
+      step_naomit(all_predictors(), pres_abs) %>%
       step_other(all_nominal_predictors(), other = "minor_vals_pooled") %>%
       recipes::step_dummy(all_nominal_predictors(), -pres_abs) %>%
       recipes::step_zv(all_predictors(),  -pres_abs) %>%
       recipes::step_corr(all_numeric_predictors(), -pres_abs, threshold = 0.9) %>%
-      themis::step_upsample(pres_abs, over_ratio = tune())
+      themis::step_upsample(pres_abs)
 }
 
-make_formula <- function(y_var) {
-    formula(glue::glue("{y_var} ~ ."))
+make_formula <- function(pres_abs) {
+    formula(glue::glue("{pres_abs} ~ ."))
 }

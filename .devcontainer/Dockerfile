@@ -1,4 +1,4 @@
-FROM rocker/geospatial:4.3
+FROM docker.io/rocker/geospatial:4.3.3
 
 RUN apt update && apt install -y --no-install-recommends python3-pip libglpk-dev
 
@@ -40,7 +40,8 @@ RUN install2.r languageserver \
     baguette \
     stacks \
     vip \ 
-    NeuralNetTools
+    NeuralNetTools \
+    ggpubr
     # shadow \
     # maptools
 
@@ -52,3 +53,4 @@ RUN install2.r languageserver \
 RUN R -e 'devtools::install_github("cran/maptools")'
 RUN R -e 'devtools::install_github("michaeldorman/shadow")'
 RUN R -e 'install.packages("inborutils",repos = c(inbo = "https://inbo.r-universe.dev",CRAN = "https://cloud.r-project.org"))'
+RUN R -e 'remotes::install_github("nx10/httpgd")'

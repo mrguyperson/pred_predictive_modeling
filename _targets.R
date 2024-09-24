@@ -41,7 +41,8 @@ tar_option_set(
     "finetune",
     "baguette",
     "stacks",
-    "vip"
+    "vip",
+    "ggpubr"
   ), # packages that your targets need to run
   format = "qs", # Optionally set the default storage format. qs is fast.
   controller = crew::crew_controller_local(workers = 8),
@@ -50,6 +51,8 @@ tar_option_set(
 
 # Run the R scripts in the R/ folder with your custom functions:
 tar_source()
+
+reps <- 5
 
 datasets <- tibble(
   data = syms(c("delta_data_lmb", "fhast_data_smb", "fhast_data_sasq")),
@@ -84,7 +87,7 @@ workflowsets <- expand_grid(
   tibble(
     species = c("delta_lmb", "smb", "sasq"),
     id_cols = syms(c("delta_id_cols", "fhast_id_cols", "fhast_id_cols")),
-    fhast = c(FALSE, TRUE, TRUE, FALSE),
+    fhast = c(FALSE, TRUE, TRUE),
     training_data = syms(glue::glue("training_data_{species}")),
   ),
   tibble(
@@ -113,6 +116,7 @@ workflowsets_mapped <- tar_map(
   values = workflowsets,
   names = "run_name",
   unlist = FALSE,
+  # reps = reps,
   tar_target(
     name = complete_workflow,
     command = make_workflow_set(training_data, y_var, col_to_drop, id_cols)
@@ -127,7 +131,7 @@ workflowsets_mapped <- tar_map(
 model_selections <- expand_grid(
   tibble(
     species = c("smb", "sasq", "delta_lmb"),
-    fhast = c(TRUE, TRUE, FALSE, FALSE),
+    fhast = c(TRUE, TRUE, FALSE),
     training_data = syms(glue::glue("training_data_{species}")),
     id_cols = syms(c("fhast_id_cols", "fhast_id_cols", "delta_id_cols"))
   ),
@@ -157,6 +161,7 @@ model_selections <- expand_grid(
 model_selections_mapped <- tar_map(
   values = model_selections,
   names = "run_name",
+  # reps = reps,
   unlist = FALSE,
   # tar_target(
   #   name = subset,
@@ -192,7 +197,7 @@ model_selections_mapped <- tar_map(
   ),
   tar_target(
     name = best_fit,
-    command = fit_best(tuned_results, metric),
+    command = fit_best(tuned_results, metric = metric),
     deployment = "main"
   ),
   tar_target(
@@ -201,7 +206,7 @@ model_selections_mapped <- tar_map(
   ),
   tar_target(
     name = final_fit,
-    command = last_fit(best_fit, split, metrics = metrics),
+    command = last_fit(object = best_fit, split = split, metrics = metrics),
     deployment = "main"
   ),
   tar_target(
@@ -213,13 +218,34 @@ model_selections_mapped <- tar_map(
     name = performance_metrics,
     command = mutate(unnest(final_fit, .metrics), name = run_name, wflow_id = best_model_name)
   ),
-    tar_target(
-    name = vip_plot,
-    command = plot_model_vip(final_model),
-    format = "file"
+  tar_target(
+    name = var_imp,
+    command = get_var_importance(final_model, training_data)
   )
+  # tar_target(
+  #   name = vip_plot,
+  #   command = plot_model_vip(final_model, var_imp),
+  #   format = "file"
+  # )
 )
 
+train_and_test_table <- expand_grid(
+  tibble(
+    data = syms(c("delta_data_lmb", "fhast_data_smb", "fhast_data_sasq")),
+    species = c("lmb", "smb", "sasq"),
+    is_fhast = c(FALSE, TRUE, TRUE)
+  ),
+  model_name = c(
+      "svm", 
+      "xgb", 
+      "rf", 
+      "regression",
+      "glmnet",
+      "nnet",
+      "bag",
+      "fhast"
+    )
+)
 # simple_models <- expand_grid(
 #   tibble(
 #     model = c("linear_regression", "logistic_regression"),
@@ -508,6 +534,7 @@ fhast_model_predictions <- tar_map(
   )
 
 list(
+  # initial data processing ----------
   tar_target(
     name = delta_raw_data_file,
     command = here("data", "csv", "iep", "USFWS_EFISH_data.csv"),
@@ -530,19 +557,19 @@ list(
   ),
   tar_target(
     name = delta_data_lmb,
-    command = clean_delta_data(delta_raw_data_file, delta_taxonomy_file)
+    command = clean_delta_data(delta_raw_data_file, delta_taxonomy_file) %>% select(-all_of(c(delta_id_cols, "count")))
   ),
   tar_target(
     name = fhast_data,
-    command = clean_fhast_data(fhast_2013_file, fhast_2014_file)
+    command = clean_fhast_data(fhast_2013_file, fhast_2014_file) 
   ),
   tar_target(
     name = fhast_data_sasq,
-    command = dplyr::filter(fhast_data, species == "sasq")
+    command = dplyr::filter(fhast_data, species == "sasq") %>% select(-all_of(c(fhast_id_cols, "count")))
   ),
   tar_target(
     name = fhast_data_smb,
-    command = dplyr::filter(fhast_data, species == "bass")
+    command = dplyr::filter(fhast_data, species == "bass")%>% select(-all_of(c(fhast_id_cols, "count")))
   ),
   tar_target(
     name = res_shore_fish_paths,
@@ -553,7 +580,7 @@ list(
     name = res_shore_data_lmb,
     command = get_res_shore_data(res_shore_fish_paths)
   ),
-  data_splits_mapped,
+  # data_splits_mapped,
   tar_target(
     name = delta_id_cols,
     command = c("regioncode", "starttime", "subregion", "sampledate", "segment_number", "seconds_per_transect")
@@ -566,11 +593,18 @@ list(
     name = res_shore_id_cols,
     command = c("date", "station_number")
   ),
-  # workflowsets_mapped,
-  model_selections_mapped,
-  # simple_models_mapped,
-  # advanced_models_mapped,
-  ##### FHAST STUFF #####
+  tar_map_rep(
+    name = modeling_results,
+    command = train_and_test(data, model_name, habitat_variable, is_fhast),
+    values = train_and_test_table,
+    batches = 1,
+    reps = 5,
+    columns = all_of(c("species", "model_name")),
+    names = all_of(c("species", "model_name")),
+    deployment = "main"
+  ),
+  # model_selections_mapped
+  # # FHAST Stuff ----------
   tar_target(
       name = fhast_base_folder,
       command = here("data")
@@ -780,8 +814,7 @@ list(
       model_cover_benefit(synth_cover_benefit_data)
     ),
 
-    ##### Make daily fish input
-
+    # Make daily fish input ---------- 
     tar_target(
       name = daily_input_data,
       command = load_daily_conditions(daily_inputs)
@@ -1010,136 +1043,119 @@ list(
   ),
   tar_target(
     name = df_for_pred_models,
-    command = make_df_for_pred_predictions(habitat_variable, col_names_fhast_pred_models, substrate_option),
-    pattern = map(substrate_option),
-    iteration = "list"
-  ),
-  fhast_model_predictions,
-  tar_combine(
-    name = pred_prediction_summary,
-    fhast_model_predictions[["predator_hab_ratings_combined"]],
-    command = dplyr::bind_rows(!!!.x) %>%
-      expand_grid(fish_combos)
-  ),
-  tar_target(
-    name = pred_prediction_summary_grouped,
-    command = pred_prediction_summary %>%
-      group_by(prey_species, model_name, life_stage, substrate) %>%
-      targets::tar_group(),
-    iteration = "group"
-  ),
-  tar_target(
-    name = pred_prediction_differences,
-    command = make_pred_model_difference_df(pred_prediction_summary_grouped),
-    iteration = "group"
-  ),
-  tar_target(
-    name = summed_pred_predction_differences,
-    command = make_summed_pred_model_df(pred_prediction_differences)
-  ),
-  tar_target(
-    name = summed_pred_predictions,
-    command = make_summed_pred_model_df(pred_prediction_summary_grouped)
-  ),
-  tar_target(
-    name = summed_pred_predictions_w_hab,
-    command = join_pred_and_hab(summed_pred_predictions, habitat_variable)
-  ),
-  tar_target(
-    name = data_summary,
-    command = make_data_summary(
-      fish_parm, habitat_variable, pred_parm, pred_prediction_summary_grouped, habitat_parm, juvenile_run, pct_cover_model, dis_to_cover_model
-    ),
-    pattern = map(pred_prediction_summary_grouped),
-    iteration = "list"
-  ),
-  tar_target(
-    name = map_data,
-    command = make_map_data(data_summary, grid_file, "average_map"),
-    pattern = map(data_summary),
-    iteration = "list"
-  ),
-  tar_target(
-    name = map_data_full,
-    command = make_map_data(data_summary, grid_file, "average_map_full"),
-    pattern = map(data_summary),
-    iteration = "list"
-  ),
-  tar_target(
-    name = mean_map,
-    command = make_mean_map(map_data, habitat_parm),
-    pattern = map(map_data),
-    iteration = "list"
-  ),
-  tar_target(
-    name = mean_map_full,
-    command = make_mean_map(map_data_full, habitat_parm),
-    pattern = map(map_data_full),
-    iteration = "list"
-  ),
-  tar_target(
-    name = pred_maps,
-    command = make_predator_maps(mean_map, hab_rating, "Predator\nHabitat Rating", "aoi"),
-    pattern = map(mean_map),
-    iteration = "list",
-    format = "file"
-  ),
-  tar_target(
-    name = mortality_maps,
-    command = make_predator_maps(map_data, pred_mort_risk, "Predator\nMort. Risk", "aoi"),
-    pattern = map(map_data),
-    iteration = "list",
-    format = "file"
-  ),
-    tar_target(
-    name = pred_maps_full,
-    command = make_predator_maps(mean_map_full, hab_rating, "Predator\nHabitat Rating", "full"),
-    pattern = map(mean_map_full),
-    iteration = "list",
-    format = "file"
-  ),
-  tar_target(
-    name = mortality_maps_full,
-    command = make_predator_maps(map_data_full, pred_mort_risk, "Predator\nMort. Risk", "full"),
-    pattern = map(map_data_full),
-    iteration = "list",
-    format = "file"
-  ),
-  tar_combine(
-    name = performance_summary,
-    model_selections_mapped[["performance_metrics"]],
-    command = dplyr::bind_rows(!!!.x)
-  ),
+    command = make_df_for_pred_predictions(habitat_variable, col_names_fhast_pred_models),
+    # pattern = map(substrate_option),
+    # iteration = "list"
+  )
+  # fhast_model_predictions,
   # tar_combine(
-  #   name = simple_performance_summary,
-  #   simple_models_mapped[["performance_metrics"]],
+  #   name = pred_prediction_summary,
+  #   fhast_model_predictions[["predator_hab_ratings_combined"]],
+  #   command = dplyr::bind_rows(!!!.x) %>%
+  #     expand_grid(fish_combos)
+  # ),
+  # tar_target(
+  #   name = pred_prediction_summary_grouped,
+  #   command = pred_prediction_summary %>%
+  #     group_by(prey_species, model_name, life_stage, substrate) %>%
+  #     targets::tar_group(),
+  #   iteration = "group"
+  # ),
+  # tar_target(
+  #   name = pred_prediction_differences,
+  #   command = make_pred_model_difference_df(pred_prediction_summary_grouped),
+  #   iteration = "group"
+  # ),
+  # tar_target(
+  #   name = summed_pred_predction_differences,
+  #   command = make_summed_pred_model_df(pred_prediction_differences)
+  # ),
+  # tar_target(
+  #   name = summed_pred_predictions,
+  #   command = make_summed_pred_model_df(pred_prediction_summary_grouped)
+  # ),
+  # tar_target(
+  #   name = summed_pred_predictions_w_hab,
+  #   command = join_pred_and_hab(summed_pred_predictions, habitat_variable)
+  # ),
+  # tar_target(
+  #   name = data_summary,
+  #   command = make_data_summary(
+  #     fish_parm, habitat_variable, pred_parm, pred_prediction_summary_grouped, habitat_parm, juvenile_run, pct_cover_model, dis_to_cover_model
+  #   ),
+  #   pattern = map(pred_prediction_summary_grouped),
+  #   iteration = "list"
+  # ),
+  # tar_target(
+  #   name = map_data,
+  #   command = make_map_data(data_summary, grid_file, "average_map"),
+  #   pattern = map(data_summary),
+  #   iteration = "list"
+  # ),
+  # tar_target(
+  #   name = map_data_full,
+  #   command = make_map_data(data_summary, grid_file, "average_map_full"),
+  #   pattern = map(data_summary),
+  #   iteration = "list"
+  # ),
+  # tar_target(
+  #   name = mean_map,
+  #   command = make_mean_map(map_data, habitat_parm),
+  #   pattern = map(map_data),
+  #   iteration = "list"
+  # ),
+  # tar_target(
+  #   name = mean_map_full,
+  #   command = make_mean_map(map_data_full, habitat_parm),
+  #   pattern = map(map_data_full),
+  #   iteration = "list"
+  # ),
+  # tar_target(
+  #   name = pred_maps,
+  #   command = make_predator_maps(mean_map, hab_rating, "Predator\nHabitat Rating", "aoi"),
+  #   pattern = map(mean_map),
+  #   iteration = "list",
+  #   format = "file"
+  # ),
+  # tar_target(
+  #   name = mortality_maps,
+  #   command = make_predator_maps(map_data, pred_mort_risk, "Predator\nMort. Risk", "aoi"),
+  #   pattern = map(map_data),
+  #   iteration = "list",
+  #   format = "file"
+  # ),
+  #   tar_target(
+  #   name = pred_maps_full,
+  #   command = make_predator_maps(mean_map_full, hab_rating, "Predator\nHabitat Rating", "full"),
+  #   pattern = map(mean_map_full),
+  #   iteration = "list",
+  #   format = "file"
+  # ),
+  # tar_target(
+  #   name = mortality_maps_full,
+  #   command = make_predator_maps(map_data_full, pred_mort_risk, "Predator\nMort. Risk", "full"),
+  #   pattern = map(map_data_full),
+  #   iteration = "list",
+  #   format = "file"
+  # ),
+  # tar_combine(
+  #   name = performance_summary,
+  #   model_selections_mapped[["performance_metrics"]],
   #   command = dplyr::bind_rows(!!!.x)
   # ),
   # tar_target(
-  #   name = total_performance_summary,
-  #   command = dplyr::bind_rows(adv_performance_summary, simple_performance_summary)
+  #   name = pred_histograms,
+  #   command = make_pred_model_histograms(pred_prediction_summary_grouped),
+  #   format = "file"
   # ),
   # tar_target(
-  #   name = fhast_performance,
-  #   command = dplyr::filter(total_performance_summary, !grepl("lmb", name))
-  # ),
-  tar_target(
-    name = pred_histograms,
-    command = make_pred_model_histograms(pred_prediction_summary_grouped),
-    format = "file"
-  ),
-  tar_target(
-    name = multimodel_pred_hab_map,
-    command = make_multimodel_river_plot(
-      df = summed_pred_predictions_w_hab, 
-      fill_option = hab_rating, 
-      scale_name = "Predator Habitat Rating"),
-    format = "file"
-  )
-  # stacked_model_mapped
-
-
-
-
-  ##### Skipped adult run stuff
+  #   name = multimodel_pred_hab_map,
+  #   command = make_multimodel_river_plot(
+  #     df = summed_pred_predictions_w_hab, 
+  #     fill_option = hab_rating, 
+  #     scale_name = "Predator Habitat Rating"),
+  #   format = "file"
+  # )
 )
+
+

@@ -6,3 +6,4 @@
 /data/*
 /_targets/*
 /output/*
+*.png

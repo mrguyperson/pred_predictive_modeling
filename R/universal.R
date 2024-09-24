@@ -80,7 +80,8 @@ get_fhast_col_names <- function(fhast_data) {
         names()
 }
 
-make_df_for_pred_predictions <- function(df, col_names, substrate_option) {
+make_df_for_pred_predictions <- function(df, substrate_option = 1) {
+    # col_names <- get_fhast_col_names(df)
     df %>%
         as_tibble() %>%
         filter(wetted == 1) %>%
@@ -93,8 +94,8 @@ make_df_for_pred_predictions <- function(df, col_names, substrate_option) {
             # if rocky substrate is the majority in a cell, then 1, else 0
             substrate = factor(fifelse(substrate >= fine & substrate > 0, 1, 0)),
             substrate = factor(substrate_option)
-            ) %>%
-        select(all_of(col_names))
+            )
+        # select(all_of(col_names))
 }
 
 make_fhast_pred_predictions <- function(model, df) {
@@ -163,41 +164,81 @@ make_metric_sets <- function(mode) {
     }
 }
 
-plot_model_vip <- function(model) {
+get_var_importance <- function(model, training_data) {
+    nsim <- 30
+    vi(model,
+        method = "permute",
+        train = training_data,
+        target = "pres_abs",
+        metric = "roc_auc",
+        pred_wrapper = pfun,
+        event_level = "second",
+        nsim = nsim,
+        keep = TRUE) 
+
+}
+
+
+
+pfun <- function(object, newdata) {
+        predict(object, newdata)$.pred_class %>%  as.numeric()
+    }
+
+plot_model_vip <- function(model, var_imp) {
     model_name <- deparse(substitute(model)) %>% str_remove("best_models_")
     output_name <- here::here("output", glue::glue("vip_{model_name}.jpg"))
 
-    if (grepl("glmnet", model_name) | grepl("bag", model_name)| grepl("svm", model_name)){
-        plot <- ggplot()
-        ggsave(filename = output_name, plot = plot, device = "jpg")
-        return(output_name)
-    }
 
-    # if (grepl("random_forest", model_name)){
-    #     plot <- finalize_model(spec, model) %>%
-    #         set_engine("ranger", importance = "permutation") %>%
-    #         last_fit(recipe, split) %>%
-    #         vip( 
-    #             geom = "col",
-    #             aesthetics = list(
-    #                 color = "black", 
-    #                 fill = "white"
-    #                 )
-    #             ) +
-    #         theme_classic(base_size = 15)
-    #     ggsave(filename = output_name, plot = plot, device = "jpg")
-    #     return(output_name)
-    # }
 
-    plot <- vip(model,
-        method = "permute",
-        geom = "col",
-        aesthetics = list(
-            color = "black", 
-            fill = "white"
-            )
-        ) +
+    plot <- vip(var_imp, geom = "boxplot")  +
         theme_classic(base_size = 15)
     ggsave(filename = output_name, plot = plot, device = "jpg")
     output_name
 }
+
+
+get_table_of_all_vi_perms <- function(vi_summary, nsim) {
+    attributes(vi_summary)$raw_scores %>%
+        as_tibble(rownames = "variable") %>%
+        pivot_longer(
+            all_of(get_list_of_permutations(nsim)),
+            values_to = "var_imp",
+            names_to = "permutation"
+        )
+}
+
+get_list_of_permutations <- function(nsim) {
+    nums <- 1:nsim
+    paste("permutation_", nums, sep = "")
+}
+
+# baked_data <- poly_yj_recipe(training_data_smb, "pres_abs", "count", fhast_id_cols) %>% prep %>% bake(new_data = NULL)
+
+# vip(final_model_rf_classification_smb,
+#         method = "permute",
+#         train = baked_data,
+#         target = "pres_abs",
+#         metric = "roc_auc",
+#         pred_wrapper = predict,
+#         geom = "col",
+#         aesthetics = list(
+#             color = "black", 
+#             fill = "white"
+#             )
+#         )
+
+
+# vis <- vi(final_model_bag_classification_smb,
+#         method = "permute",
+#         train = training_data_smb,
+#         target = "pres_abs",
+#         metric = "roc_auc",
+#         pred_wrapper = pfun,
+#         event_level = "second",
+#         nsim = 15
+#         )
+
+# vip(vis, geom = "boxplot")  +
+#         theme_classic(base_size = 15)
+
+# predict(final_model_rf_classification_smb, training_data_smb)
