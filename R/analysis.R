@@ -26,7 +26,8 @@ train_and_test <- function(data, model_type, habitat_variable, is_fhast) {
             filter(wetted == 1) %>%
             mutate(hab_rating = make_fhast_pred_predictions(
                 model = model_for_predictions, 
-                df = make_df_for_pred_predictions(habitat_variable))) %>% 
+                df = make_df_for_pred_predictions(habitat_variable))
+                ) %>% 
             select(distance, lat_dist, hab_rating)
     }
 
@@ -160,32 +161,32 @@ train_and_test <- function(data, model_type, habitat_variable, is_fhast) {
 # #         summarize(habitat_rating = sum(fhast_predictions))
 
 
-# summary_data <- dt_res[species != "lmb",
-#         .(
-#             tar_group, tar_batch, tar_rep, species, model_name,
-#             fhast_predictions = (unlist(fhast_predictions))
-#             ),
-#         # by = .(species, model_name, tar_batch, tar_rep)
-#         ][,
-#             row := 1:.N,
-#             by = .(species, model_name, tar_batch, tar_rep)
-#         ][,
-#             .(habitat_rating = mean(fhast_predictions)),
-#             by = .(species, model_name, row)
-#         ][,
-#             .(habitat_rating = sum(habitat_rating)),
-#             by = .(model_name, row)
-#         ][rowid_to_column(habitat_variable, "row"), on = "row"][,
-#             .(habitat_rating = mean(habitat_rating)),
-#             by = .(model_name, distance, lat_dist)
-#         ][grid_file, on = c("distance", "lat_dist"), nomatch = 0] %>%
-#         st_as_sf()
+# # summary_data <- dt_res[species != "lmb",
+# #         .(
+# #             tar_group, tar_batch, tar_rep, species, model_name,
+# #             fhast_predictions = (unlist(fhast_predictions))
+# #             ),
+# #         # by = .(species, model_name, tar_batch, tar_rep)
+# #         ][,
+# #             row := 1:.N,
+# #             by = .(species, model_name, tar_batch, tar_rep)
+# #         ][,
+# #             .(habitat_rating = mean(fhast_predictions)),
+# #             by = .(species, model_name, row)
+# #         ][,
+# #             .(habitat_rating = sum(habitat_rating)),
+# #             by = .(model_name, row)
+# #         ][rowid_to_column(habitat_variable, "row"), on = "row"][,
+# #             .(habitat_rating = mean(habitat_rating)),
+# #             by = .(model_name, distance, lat_dist)
+# #         ][grid_file, on = c("distance", "lat_dist"), nomatch = 0] %>%
+# #         st_as_sf()
 
 
-# dt_res[species == "smb" & model_name == "svm", .(
-#             tar_group, tar_batch, tar_rep, species, model_name,
-#             fhast_predictions = (unlist(fhast_predictions))
-#             )]
+# # dt_res[species == "smb" & model_name == "svm", .(
+# #             tar_group, tar_batch, tar_rep, species, model_name,
+# #             fhast_predictions = (unlist(fhast_predictions))
+# #             )]
 
 # make_map(
 #     data_frame = summary_data,
@@ -251,7 +252,7 @@ train_and_test <- function(data, model_type, habitat_variable, is_fhast) {
 # var_imp %>%
 #     filter(species == "lmb") %>%
 #     clean_model_names() %>%
-#     clean_delta_var_names() %>% 
+#     clean_var_names() %>% 
 #     ggplot(aes(x = var_imp, y = variable, fill = model_name)) +
 #     geom_boxplot() +
 #     scale_fill_viridis(
@@ -491,6 +492,7 @@ train_and_test <- function(data, model_type, habitat_variable, is_fhast) {
 #     scale_x_continuous(breaks = seq(0,0.2,.1), limits = c(0, 0.2)) +
 #     ylab("") +
 #     xlab("Variable importance") +
+#     labs(fill = NULL) +
 #     theme_classic(
 #         base_size = 25
 #         ) +
@@ -500,7 +502,7 @@ train_and_test <- function(data, model_type, habitat_variable, is_fhast) {
 #         ncol = 2,
 #         labeller = as_labeller(c(smb = "Sm. bass",sasq = "Pikeminnow"))
 #         ) +
-#      guides(fill = guide_legend(title = ""))
+#      guides(fill = guide_legend(nrow = 2))
 
 #     # theme(
 #     #     strip.background = element_blank(),

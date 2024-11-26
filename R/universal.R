@@ -99,8 +99,6 @@ make_df_for_pred_predictions <- function(df, substrate_option = 1) {
 }
 
 make_fhast_pred_predictions <- function(model, df) {
-    # browser()
-
     pull(predict(model, type = "prob", new_data = df), .pred_1)
 }
 

@@ -1,0 +1,177 @@
+---
+title: "Fine-scale predictions of the presence of predatory fish using a machine-learning framework"
+author:
+  - name: Theodore Hermann
+    id: th
+    orcid: 0000-0003-2632-7338
+    email: ted.w.hermann@gmail.com
+    affiliation:
+    - name: Southwest Fisheries Science Center, Fisheries Ecology Division
+      city: Santa Cruz
+      state: CA
+  - name: Peter Dudley
+    id: pd
+    email: peter.dudley@noaa.gov
+    orcid: 0000-0002-3210-634X
+    affiliation:
+      - name: Southwest Fisheries Science Center, Fisheries Ecology Division
+        city: Santa Cruz
+        state: CA
+abstract: >
+  This is filler text.
+  Test.
+keywords:
+  - salmonid
+  - machine learning
+  - Sacramento River
+format:
+  html: default
+  docx: default
+bibliography: references.bib
+csl: https://www.zotero.org/styles/ecological-modelling
+---
+
+# Introduction 
+Freshwater biodiversity is threatened worldwide [@allanOverfishingInlandWaters2005;@arthingtonFishConservationFreshwater2016;@reidEmergingThreatsPersistent2019]. 
+Large, highly migratory fish that require freshwater for all or part of their life histories are especially vulnerable because of the 
+variety of habitats they need to exploit [@heDisappearingGiantsReview2017;@stoneLastLeviathans2007;@waldmanNorthAmericanDiadromous2022].
+Anadromous Pacific salmon are culturally, economically, and ecologically important migratory fish native to highly modified river 
+systems in North America, which have been impacted by dams [@waplesEvolutionaryResponsesNative2008;@storchReviewPotentialConservation2022], 
+agriculture [@macnealePesticidesAquaticFood2010], invasive species [@Kuehne2012;@Michel2018], 
+channel modification [@richterEcologicallySustainableWater2003;@gregory29HistoricalChannel2007;@merzDisruptionNaturalDisturbance2024], 
+and climate change [@siegelImpactsClimateChange2020]. 
+
+The Sacramento River is the longest in California and historically supported spawning and nursery ground for Pacific salmonids, providing an important food source for humans for thousands of years [@yoshiyamaHistoricalAbundanceDecline1998;@yoshiyamaHistorySalmonPeople1999]. However, the region has been impacted dramatically since the mid-nineteenth century by damming, mining, agriculture, fishing, and other anthropogenic activities [@munschOneHundredseventyYears2022]. Thus, salmon runs have been greatly diminished and several are listed on the Endangered Species List [cite]. Predation on juvenile salmonids is a concern, especially with the introduction of numerous predators such as black bass *Micropterus* spp., striped bass *Morone saxatilis*, white catfish *Ameiurus catus*, and channel catfish *Ictalurus punctatus* [cite].
+
+- Small changes to the river (bank development, restoration, etc.) can have unintended consequences, including changes to predator distributions by creating areas that are desirable to predators.
+- Spatially explicit models can help predict the effects of these changes
+- Restoration (or other) projects can occur at relatively small scales (e.g., a few m of shoreline), therefore predation models at larger scales (e.g., 1 km) may not capture the local effects of such changes
+- changes to the environment can result in changes to predator distributions and therefore predator&ndash;prey encounters
+
+## Models/Machine learning
+- Machine learning models are increasingly being used in ecological contexts
+- Such models are predictive rather than inferential, which makes them well suited for predicting changes due to environmental changes
+- Many of the popular algorithms for these models are effectively "black boxes" and computationally expensive to train but can offer greater predictive power
+- To our knowledge, no study has explored the use of various machine learning models to predict predator distributions at a fine scale.
+
+## Goals
+- Here, we built a robust pipeline for building, training, testing and comparing various machine learning models
+- We present two case studies using presence-absence data for smallmouth bass (latin name) and Sacramento pikeminnow (latin name) in the American river and largemouth bass (latin name) in the Sacramento river delta
+
+
+# Methods
+
+## study areas
+ - Sacramento River
+ The American River is one of the major tributaries of California’s Sacramento River. Historically, the American River supported spring-, fall-, and late-fall-run salmon, but gold placer mining and later upstream dam construction have reduced the runs to a fall run. For juveniles in the river, suitable habitat exists only within the Lower American River downstream of Nimbus Dam. The American River has been subject of management and restoration efforts (Williams Bulletin) in attempts to increase the use of salmon spawning sites (Zeug et al., 2014), increase adult salmon production (Peterson and Duarte 2020), and enhance juvenile salmon rearing habitat (Hellmair et al., 2018).
+ 
+ - Sacramento River delta
+ - Do I need a map here??
+
+## data sources
+ FHAST estimates this probability using a GLM fitted using field data collected by FISHBIO (2014, 2015). Briefly, transects starting 15 feet from shore and moving towards shore were electroshocked and all fish were collected. Afterwards, environmental data were collected from each transect, including percent cover from submerged vegetation and woody debris, presence/absence of shade, type of substrate, water depth (at 5 ft, 10 ft, and 15 ft from shore) and water velocity (at 5 ft, 10 ft, and 15 ft from shore). These data are appealing because they are similar in nature to the individual-based model setup; i.e., transects/model cells have their own unique local habitat qualities and are associated with the presence/absence of predators.
+
+  
+
+Before building the predator model, the data were cleaned and parsed. Vegetation and wood data were originally reported as percent ranges. The mean value of each range was used and converted to a proportion. Substrate classification varied among study years, and the vast majority of values were either rocky or not; therefore, all substrate classifications that included “rocky” were simplified to “rock”. Gravel, which appeared very infrequently, was classified as “rock”. All other substrates were classified as “other”. Finally, water depth and velocity values were averaged (i.e., the respective values at 5, 10, and 15 ft from shore) to yield a single depth or velocity value per transect.
+
+  
+
+The model includes predictions for both smallmouth bass (Micropterus dolomieu) and Sacramento pikeminnow (Ptychocheilus grandis). Predators such as striped bass (Morone saxatilis) and channel catfish (Ictalurus punctatus), which feed on juvenile fish in the Sacramento Delta and can have a large impact on salmonids (e.g., Lindley and Mohr, 2003; Michel et al., 2018), were excluded because only a handful were collected by FISHBIO in the upper Sacramento over a several year period. This indicates either that these species are not a significant influence on juvenile salmonid and sturgeon populations in this part of the river, or that they were simply missed during sampling. Regardless, the data are inadequate for modeling and therefore these species were not included in FHAST. 
+
+  
+
+Data for smallmouth bass from 2013 included observations for other Micropterus spp. (listed as “black bass”) whereas data in 2014 were broken down by species. For consistency, all black bass data from 2014 were pooled. Hereafter, references to “smallmouth bass” refer to pooled “black bass” data. Furthermore, data were divided by fish size (< 150 mm and > 150 mm). Due to the limited numbers of observations, these data were also pooled, although smaller fish are unlikely piscivorous and may exhibit different behaviors and habitat choices compared to large conspecifics. Finally, because there were so few observations that included more than one predator, the original count data were transformed into presence/absence data.
+
+!!! info for other data source!!!!
+
+## models
+We included three linear models in the study.
+
+- FHAST uses a simple general linear model (GLM) without interaction or polynomial terms. This was used as a baseline comparison for other models in the study.
+
+- We also allowed the framework to test GLMs with interactions and/or polynomial terms.
+
+- We also included a GLM with L1 and L2 regularization ("elastic net").
+
+We included four nonlinear models in the study.
+
+- a support vector machine (SVM) with radial basis function kernel
+	- this model optimizes a hyperplane separating labels
+
+- Random Forest
+	- A classifier that is an ensemble of decision trees that grows randomly with subsampled data
+
+- XGBoost
+	- A classifier that is an ensemble of decision trees that grows greedily
+
+- Neural Net
+	- multilayer perceptron model (a.k.a. a single layer, feed-forward neural network)
+
+- Ensemble Neural net
+	- a collection of neural networks forming an ensemble via bagging (aka [bootstrap aggregating](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C7&q=bagging+predictors+breiman+1996&oq=Bagging+predictors+)) ensemble models.
+
+## training and evaluation
+
+### pipeline - Do we need a flow diagram?
+- data split: 80% training data, 20% reserved for testing data
+- training data used for X-fold cross validation repeated x times.
+- Where appropriate, models were trained using different hyperparameter combinations.
+- hyperparameters were selected using a latin hypercube to provide good coverage of values without needing to use an exhaustive full grid search approach
+- models trained using tidymodels framework
+- each model tested with various feature engineering options following xxxx
+- the importance of model features was estimated using permutation;
+- permutation importance is a model-agnostic tool that can be used to compare feature importance across different models
+
+## code
+- pipeline was managed using the targets framework, which is a Make-like pipeline manager for R. Models were trained and tested using the tidymodels framework. All code is available on github, including the code for producing this manuscript.
+
+# Results
+
+```{r, echo=FALSE, message = FALSE, warning = FALSE}
+library(targets)
+# library(magick)
+# tar_load(roc_plot)
+
+# file_path_for_quarto <- function(path) {
+#   paste0(basename(dirname(path)), "/", basename(path))
+# }
+
+# tar_load(var_imp_plot)
+# knitr::include_graphics(knitr::plot_crop(roc_plot))
+```
+
+![roc auc plot](`r tar_read(roc_plot)`){#fig-roc-auc}
+
+![var imp plot](`r tar_read(var_imp_plot)`){#fig-var-imp}
+
+![histogram](/output/predator_histograms.jpg){#fig-histogram}
+
+![maps](/output/hab_rating_all_models.jpg){#fig-maps}
+
+
+## model selection
+
+## model performance
+
+## model interpretability
+
+# Discussion
+
+## trade-offs among models
+- nonlinear models can be harder to interpret but may offer improved predictions
+- some models take considerably longer to train than others but may not offer considerable advantages for predictions.
+
+## method may be species specific
+- hard to collect data for species that appear sporadically in large numbers
+- in effective for species that are highly mobile
+
+## limitations for "cell" size when collecting data
+- sampling area size should reflect the behavior of a fish
+- if data transects are too large, then environmental heterogeneity may be overly "averaged"; i.e., each transect may be too similar
+- similarly, larger areas are more likely to contain fish, so the model may simply predict fish in every "cell"
+- areas that are too small may inflate the number of absences in the data, so the model may simply predict that all cells are empty.
+
+## data availability limitations
+- data of this nature are time and energy intensive to collect, especially if they are to include the adequate spatiotemporal coverage
+- data are also improved if sampling is exhaustive; e.g., multiple passes with electroshockers to catch as many fish as possible.

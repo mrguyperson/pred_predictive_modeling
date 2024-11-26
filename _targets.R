@@ -1033,19 +1033,47 @@ list(
     name = habitat_variable,
     command = select_variable_habitat(v_and_d_daily_data_sets, habitat_fixed, habitat_parm)
   ),
+  # tar_target(
+  #   name = col_names_fhast_pred_models,
+  #   command = get_fhast_col_names(fhast_data)
+  # ),
+  # tar_target(
+  #   name = substrate_option,
+  #   command = list(1, 0)
+  # ),
+  # tar_target(
+  #   name = df_for_pred_models,
+  #   command = make_df_for_pred_predictions(df = habitat_variable, col_names = col_names_fhast_pred_models),
+  #   # pattern = map(substrate_option),
+  #   # iteration = "list"
+  # ),
   tar_target(
-    name = col_names_fhast_pred_models,
-    command = get_fhast_col_names(fhast_data)
+    name = var_imp_summary,
+    command = summarize_var_imp(modeling_results, permutations = 30),
+    deployment = "main"
   ),
   tar_target(
-    name = substrate_option,
-    command = list(1, 0)
+    name = palette,
+    command = c("#999999", "#D55E00",
+                         "#F0E442", "#56B4E9", "#E69F00",
+                         "#0072B2", "#009E73", "#CC79A7"
+                         )
+
   ),
   tar_target(
-    name = df_for_pred_models,
-    command = make_df_for_pred_predictions(habitat_variable, col_names_fhast_pred_models),
-    # pattern = map(substrate_option),
-    # iteration = "list"
+    name = var_imp_plot,
+    command = plot_var_imp(var_imp_summary, palette),
+    format = "file"
+  ),
+  tar_target(
+    name = roc_plot,
+    command = plot_auroc(modeling_results),
+    format = "file",
+    deployment = "main"
+  ),
+  tar_quarto(
+    name = manuscript,
+    path = here::here("manuscript.qmd")
   )
   # fhast_model_predictions,
   # tar_combine(
