@@ -31,28 +31,18 @@ bibliography: references.bib
 csl: https://www.zotero.org/styles/ecological-modelling
 ---
 
+```{r, echo=FALSE, message = FALSE, warning = FALSE}
+library(targets)
+```
+
 # Introduction 
-Freshwater biodiversity is threatened worldwide [@allanOverfishingInlandWaters2005;@arthingtonFishConservationFreshwater2016;@reidEmergingThreatsPersistent2019]. 
-Large, highly migratory fish that require freshwater for all or part of their life histories are especially vulnerable because of the 
-variety of habitats they need to exploit [@heDisappearingGiantsReview2017;@stoneLastLeviathans2007;@waldmanNorthAmericanDiadromous2022].
-Anadromous Pacific salmon are culturally, economically, and ecologically important migratory fish native to highly modified river 
-systems in North America, which have been impacted by dams [@waplesEvolutionaryResponsesNative2008;@storchReviewPotentialConservation2022], 
-agriculture [@macnealePesticidesAquaticFood2010], invasive species [@Kuehne2012;@Michel2018], 
-channel modification [@richterEcologicallySustainableWater2003;@gregory29HistoricalChannel2007;@merzDisruptionNaturalDisturbance2024], 
-and climate change [@siegelImpactsClimateChange2020]. 
+Freshwater biodiversity is threatened worldwide by anthropogenic activity [@allanOverfishingInlandWaters2005;@arthingtonFishConservationFreshwater2016;@reidEmergingThreatsPersistent2019]. Large, highly migratory fish spcies that require freshwater for all or part of their life histories are particularly vulnerable for many reasons, including diverse habitat requirements, large body size, and high market value [@heDisappearingGiantsReview2017;@stoneLastLeviathans2007;@waldmanNorthAmericanDiadromous2022]. Pacific salmonids (*Onchorhynchus* spp.) are culturally, economically, and ecologically important migratory fish that spawn in some of the most highly modified river systems in North America, which have been impacted by dams [@waplesEvolutionaryResponsesNative2008;@storchReviewPotentialConservation2022], agriculture [@macnealePesticidesAquaticFood2010], invasive species [@Kuehne2012;@Michel2018], channel modification [@richterEcologicallySustainableWater2003;@gregory29HistoricalChannel2007;@merzDisruptionNaturalDisturbance2024], and climate change [@siegelImpactsClimateChange2020]. 
 
-The Sacramento River is the longest in California and historically supported spawning and nursery ground for Pacific salmonids, providing an important food source for humans for thousands of years [@yoshiyamaHistoricalAbundanceDecline1998;@yoshiyamaHistorySalmonPeople1999]. However, the region has been impacted dramatically since the mid-nineteenth century by damming, mining, agriculture, fishing, and other anthropogenic activities [@munschOneHundredseventyYears2022]. Thus, salmon runs have been greatly diminished and several are listed on the Endangered Species List [cite]. Predation on juvenile salmonids is a concern, especially with the introduction of numerous predators such as black bass *Micropterus* spp., striped bass *Morone saxatilis*, white catfish *Ameiurus catus*, and channel catfish *Ictalurus punctatus* [cite].
+The Sacramento River is the longest river in California and historically supported spawning and nursery ground for Pacific salmonids, providing an important food source for humans for thousands of years [@yoshiyamaHistoricalAbundanceDecline1998;@yoshiyamaHistorySalmonPeople1999]. However, the region has been impacted dramatically since the mid-nineteenth century by damming, mining, agriculture, fishing, and other anthropogenic activities [@munschOneHundredseventyYears2022]. Thus, the spawning migration runs of salmon have been greatly diminished and several are listed on the Endangered Species List [cite]. Habitat restoration projects have been undertaken for decades to support different aspects of salmonid life history in the Sacramento River basin [@goletSuccessesFailuresSuggested2013]. However, changing local habitat parameters can induce changes in populations of piscivorous fish that prey on juvenile salmonds [@Sabal2016] [any refs showing restoration unintetionally increasing preds??]. Juvenile salmonids are prey for both native predators, such as Sacramento pikeminnow (*Ptychocheilus grandis*), and numerous introduced predators, such as black bass (*Micropterus* spp.), striped bass (*Morone saxatilis*), white catfish (*Ameiurus catus*), and channel catfish (*Ictalurus punctatus*) [@Michel2018]. Understanding how restoration projects affect salmonid predators is thus crucial for management efforts.
 
-- Small changes to the river (bank development, restoration, etc.) can have unintended consequences, including changes to predator distributions by creating areas that are desirable to predators.
-- Spatially explicit models can help predict the effects of these changes
-- Restoration (or other) projects can occur at relatively small scales (e.g., a few m of shoreline), therefore predation models at larger scales (e.g., 1 km) may not capture the local effects of such changes
-- changes to the environment can result in changes to predator distributions and therefore predator&ndash;prey encounters
+Machine learning (ML) models are particularly suited to making new predictions from existing data and are growing in popularity for ecological applications [@rubbensMachineLearningMarine2023;@borowiecDeepLearningTool2022;@goodwinUnlockingPotentialDeep2022;@pichlerMachineLearningDeep2023]. Despite their effectiveness, many ML models are "black boxes," which reduces their interpretability and may undermine user confidence in the results compared with more familiar statistical models, especially when the results are used to make important decisions [@shinEffectsExplainabilityCausability2021;@rudinStopExplainingBlack2019]. However, several approaches exist for extracting meaning from ML models [@lucasTranslucentBoxInterpretable2020;@pichlerMachineLearningDeep2023], such as permutational importance [@altmannPermutationImportanceCorrected2010]. Another area of friction when using ML models in ecology is that there are many models to choose from, many potential applications, and no clear guidelines for which models may be appropriate. For example, sophisticated, nonlinear models, such as neural networks, may be most appropriate for some applications, but they are slow to train and difficult to interpret, and in some cases may offer little predictive advantage over a simpler model such as logistic regression [@pichlerMachineLearningDeep2023; @rudinOptimizedScoringSystems2018;@rudinStopExplainingBlack2019]. Thus, understanding and justifying the choice of model for a given application is important.
 
-## Models/Machine learning
-- Machine learning models are increasingly being used in ecological contexts
-- Such models are predictive rather than inferential, which makes them well suited for predicting changes due to environmental changes
-- Many of the popular algorithms for these models are effectively "black boxes" and computationally expensive to train but can offer greater predictive power
-- To our knowledge, no study has explored the use of various machine learning models to predict predator distributions at a fine scale.
+Here, we developed a robust ML pipeline for predicting the presence/absence of common predator of Sacramento River salmonids. To our knowledge, no study has explored the use of machine learning models to predict the presence/absence of predatory freshwater fish at a fine spatial scale based on environmental parameters. Our pipeline includes several linear and nonlinear models to explore which algorithms may be most appropriate for this application. Models are compared based on predictive performance and training time [!!TODO!!]. We demonstrate the use of the pipeline with two case studies (smallmouth bass and Sacramento pikeminnow from the lower Sacremento River and largemouth bass from the Sacramento River delta) based on field data. The framework outlined here is flexible enough that it could be applied to other river systems where similar data are available.
 
 ## Goals
 - Here, we built a robust pipeline for building, training, testing and comparing various machine learning models
@@ -69,7 +59,7 @@ The Sacramento River is the longest in California and historically supported spa
  - Do I need a map here??
 
 ## data sources
- FHAST estimates this probability using a GLM fitted using field data collected by FISHBIO (2014, 2015). Briefly, transects starting 15 feet from shore and moving towards shore were electroshocked and all fish were collected. Afterwards, environmental data were collected from each transect, including percent cover from submerged vegetation and woody debris, presence/absence of shade, type of substrate, water depth (at 5 ft, 10 ft, and 15 ft from shore) and water velocity (at 5 ft, 10 ft, and 15 ft from shore). These data are appealing because they are similar in nature to the individual-based model setup; i.e., transects/model cells have their own unique local habitat qualities and are associated with the presence/absence of predators.
+FHAST estimates this probability using a GLM fitted using field data collected by FISHBIO (2014, 2015). Briefly, transects starting 15 feet from shore and moving towards shore were electroshocked and all fish were collected. Afterwards, environmental data were collected from each transect, including percent cover from submerged vegetation and woody debris, presence/absence of shade, type of substrate, water depth (at 5 ft, 10 ft, and 15 ft from shore) and water velocity (at 5 ft, 10 ft, and 15 ft from shore). These data are appealing because they are similar in nature to the individual-based model setup; i.e., transects/model cells have their own unique local habitat qualities and are associated with the presence/absence of predators.
 
   
 
@@ -77,7 +67,13 @@ Before building the predator model, the data were cleaned and parsed. Vegetation
 
   
 
-The model includes predictions for both smallmouth bass (Micropterus dolomieu) and Sacramento pikeminnow (Ptychocheilus grandis). Predators such as striped bass (Morone saxatilis) and channel catfish (Ictalurus punctatus), which feed on juvenile fish in the Sacramento Delta and can have a large impact on salmonids (e.g., Lindley and Mohr, 2003; Michel et al., 2018), were excluded because only a handful were collected by FISHBIO in the upper Sacramento over a several year period. This indicates either that these species are not a significant influence on juvenile salmonid and sturgeon populations in this part of the river, or that they were simply missed during sampling. Regardless, the data are inadequate for modeling and therefore these species were not included in FHAST. 
+The model includes predictions for both smallmouth bass (*Micropterus dolomieu*) and Sacramento pikeminnow (*Ptychocheilus grandis*). 
+Predators such as striped bass (*Morone saxatilis*) and channel catfish (*Ictalurus punctatus*), 
+which feed on juvenile fish in the Sacramento Delta and can have a large impact on salmonids (e.g., Lindley and Mohr, 2003; Michel et al., 2018), 
+were excluded because only a handful were collected by FISHBIO in the upper Sacramento over a several year period. 
+This indicates either that these species are not a significant influence on juvenile salmonid and sturgeon populations in this part of the river, 
+or that they were simply missed during sampling. 
+Regardless, the data are inadequate for modeling and therefore these species were not included in FHAST.
 
   
 
@@ -127,19 +123,6 @@ We included four nonlinear models in the study.
 - pipeline was managed using the targets framework, which is a Make-like pipeline manager for R. Models were trained and tested using the tidymodels framework. All code is available on github, including the code for producing this manuscript.
 
 # Results
-
-```{r, echo=FALSE, message = FALSE, warning = FALSE}
-library(targets)
-# library(magick)
-# tar_load(roc_plot)
-
-# file_path_for_quarto <- function(path) {
-#   paste0(basename(dirname(path)), "/", basename(path))
-# }
-
-# tar_load(var_imp_plot)
-# knitr::include_graphics(knitr::plot_crop(roc_plot))
-```
 
 ![roc auc plot](`r tar_read(roc_plot)`){#fig-roc-auc}
 
