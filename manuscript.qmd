@@ -27,6 +27,7 @@ keywords:
 format:
   html: default
   docx: default
+number-sections: true
 bibliography: references.bib
 csl: https://www.zotero.org/styles/ecological-modelling
 ---
@@ -44,72 +45,36 @@ Machine learning (ML) models are particularly suited to making new predictions f
 
 Here, we developed a robust ML pipeline for predicting the presence/absence of common predator of Sacramento River salmonids. To our knowledge, no study has explored the use of machine learning models to predict the presence/absence of predatory freshwater fish at a fine spatial scale based on environmental parameters. Our pipeline includes several linear and nonlinear models to explore which algorithms may be most appropriate for this application. Models are compared based on predictive performance and training time [!!TODO!!]. We demonstrate the use of the pipeline with two case studies (smallmouth bass and Sacramento pikeminnow from the lower Sacremento River and largemouth bass from the Sacramento River delta) based on field data. The framework outlined here is flexible enough that it could be applied to other river systems where similar data are available.
 
-## Goals
-- Here, we built a robust pipeline for building, training, testing and comparing various machine learning models
-- We present two case studies using presence-absence data for smallmouth bass (latin name) and Sacramento pikeminnow (latin name) in the American river and largemouth bass (latin name) in the Sacramento river delta
 
-
-# Methods
-
+# Methods (do we need a "study area" section?)
+<!-- 
 ## study areas
  - Sacramento River
  The American River is one of the major tributaries of California’s Sacramento River. Historically, the American River supported spring-, fall-, and late-fall-run salmon, but gold placer mining and later upstream dam construction have reduced the runs to a fall run. For juveniles in the river, suitable habitat exists only within the Lower American River downstream of Nimbus Dam. The American River has been subject of management and restoration efforts (Williams Bulletin) in attempts to increase the use of salmon spawning sites (Zeug et al., 2014), increase adult salmon production (Peterson and Duarte 2020), and enhance juvenile salmon rearing habitat (Hellmair et al., 2018).
  
  - Sacramento River delta
- - Do I need a map here??
+ - Do I need a map here?? -->
 
-## data sources
-FHAST estimates this probability using a GLM fitted using field data collected by FISHBIO (2014, 2015). Briefly, transects starting 15 feet from shore and moving towards shore were electroshocked and all fish were collected. Afterwards, environmental data were collected from each transect, including percent cover from submerged vegetation and woody debris, presence/absence of shade, type of substrate, water depth (at 5 ft, 10 ft, and 15 ft from shore) and water velocity (at 5 ft, 10 ft, and 15 ft from shore). These data are appealing because they are similar in nature to the individual-based model setup; i.e., transects/model cells have their own unique local habitat qualities and are associated with the presence/absence of predators.
+## Data sources
+### Sacramento River
+Models for the lower Sacramento were trained and tested using field data collected in 2013 and 2014 [@FISHBIO2014; @FISHBIO2015a]. Briefly, transects starting 15 feet from shore and moving towards shore were electroshocked and all fish were collected. Afterwards, environmental data were collected from each transect, including cover from submerged vegetation and woody debris (percent), presence/absence of shade, type of substrate, water depth (at 5 ft, 10 ft, and 15 ft from shore) and water velocity (at 5 ft, 10 ft, and 15 ft from shore). The data were then cleaned and parsed. Vegetation and wood data were originally reported as percent ranges. The mean value of each range was used and converted to a proportion. Substrate classification varied among study years, and the vast majority of values were either rocky or not; therefore, all substrate classifications that included the word "rocky" were simplified to "rock". Gravel, which appeared very infrequently, was classified as "rock." All other substrates were classified as "not rock". Finally, water depth and velocity values were averaged for each transect (i.e., the respective values at 5, 10, and 15 ft from shore) to yield a single depth or velocity value per transect.
 
-  
+Although the data set provided records of several piscivorous fish species, we only used data for  smallmouth bass (*Micropterus dolomieu*) and Sacramento pikeminnow (*Ptychocheilus grandis*). Predators such as striped bass (*Morone saxatilis*) and channel catfish (*Ictalurus punctatus*), which feed on juvenile fish in the Sacramento Delta and can have a large impact on salmonids [e.g., @Lindley2003; @Michel2018], were excluded because only a individuals were recorded over a several year period. This indicates either that these species are not a significant influence on juvenile salmonid and sturgeon populations in this part of the river, or that they were simply missed during sampling. Regardless, the data were inadequate for modeling and therefore these species were excluded from this analysis.
 
-Before building the predator model, the data were cleaned and parsed. Vegetation and wood data were originally reported as percent ranges. The mean value of each range was used and converted to a proportion. Substrate classification varied among study years, and the vast majority of values were either rocky or not; therefore, all substrate classifications that included “rocky” were simplified to “rock”. Gravel, which appeared very infrequently, was classified as “rock”. All other substrates were classified as “other”. Finally, water depth and velocity values were averaged (i.e., the respective values at 5, 10, and 15 ft from shore) to yield a single depth or velocity value per transect.
+Data from 2013 reported only observations of *Micropterus* species (listed as “black bass”), whereas data in 2014 reported *Micropterus* observations by species. For consistency with the 2013 observations, all black bass data from 2014 were pooled. Hereafter, references to “smallmouth bass” refer to pooled “black bass” data. Furthermore, observations included fish size (recorded as < 150 mm and > 150 mm). Due to the limited numbers of total observations in the data, we pooled fish of all sizes per species, even though smaller fish are less likely to be piscivorous and may exhibit different behaviors and habitat choices compared with larger conspecifics. Finally, the original count data were transformed into presence/absence data because there were so few transects in which more than one individual per predator species was observed.
 
-  
+### Sacramento--San Joaquin Delta -- how to cite?
+Our second data set was collected in the Sacramento--San Joaquin Delta as part of the California Department of Fish and Game’s (CDFG) Delta Resident Shoreline Fish Monitoring Project. This survey was conducted sporadically in three decades (1980s, 1990s, and 2000s) until December 2004. Shoreline areas were shocked for about 10 to 15 seconds in 20 m increments. Data were collected from each sampling area including location information, water quality (temperature, water clarity [Secchi disc, cm], conductivity [µmhos], and turbidity [NTU]), habitat characteristics (channel type, sampling area, vegetation type, bank type, depth [feet], and number of snags), environmental variables (surface flow (water velocity [m/s]), estimated wind speed [mph], and light [LUX]), electro-fishing settings (including time and distance of shoreline shocked), and catch (fish species count and length). We focused on largemouth bass since they were abundant in the data and a previous study using this data set found that largemouth bass had a high detection probability using the these sampling methods [@mckenzieEvaluatingRoleBoat2021], suggesting a lower occurrence of false negatives in the data. For consistency with the data from the Sacramento River, we converted counts into presencen/absence.
 
-The model includes predictions for both smallmouth bass (*Micropterus dolomieu*) and Sacramento pikeminnow (*Ptychocheilus grandis*). 
-Predators such as striped bass (*Morone saxatilis*) and channel catfish (*Ictalurus punctatus*), 
-which feed on juvenile fish in the Sacramento Delta and can have a large impact on salmonids (e.g., Lindley and Mohr, 2003; Michel et al., 2018), 
-were excluded because only a handful were collected by FISHBIO in the upper Sacramento over a several year period. 
-This indicates either that these species are not a significant influence on juvenile salmonid and sturgeon populations in this part of the river, 
-or that they were simply missed during sampling. 
-Regardless, the data are inadequate for modeling and therefore these species were not included in FHAST.
+## Models
+We included three linear models in the study: a general linear model (GLM) without interaction or polynomial terms, was used as a baseline comparison for other models in the study; a GLM with interactions and/or polynomial terms (several combinations used in the workflow); and a GLM with L1 and L2 regularization ("elastic net") [@zouRegularizationVariableSelection2005]. We also included four nonlinear models: a support vector machine (SVM) with radial basis function kernel, which optimizes a hyperplane separating categories [@scholkopfComparingSupportVector1997]; a random forest classifier, which is an ensemble of decision trees that grows randomly with subsampled data [@biauRandomForestGuided2016]; a gradient-boosted tree classifier (XGBoost), which is an ensemble of decision trees that grows greedily [@chenXGBoostScalableTree2016]; a multilayer perceptron model, which is a single layer, feed-forward neural network [@hornikMultilayerFeedforwardNetworks1989]; and an bagged neural net, which is a collection of neural networks forming an ensemble via bootstrap aggregating ("bagging") [@breimanBaggingPredictors1996].
 
-  
+## Training and evaluation
+Models were trained using the `tidymodels` metapackage (v. `r packageVersion("tidymodels")`) in R (v. `r getRversion()`). Preprocessing of data differed for each model and followed @kuhnFeatureEngineeringSelection2019. Because there were many more absences in the data, we upsampled rows with presences in the training data using the R package `themis` (v. `r packageVersion("themis")`). Otherwise, the optimal model may simply have predicted only absences. Models required hyperparameter tuning during training, which varied with the model. The base GLM and GLM with interactions and/or polynomial terms had no hyperparameters to tune. For the elastic net GLM, we tuned the penalty and mixture parameters, which determined the total amount of regularization and the mix of L1 and L2 regularization, respectively. For the SVM, we tuned cost and sigma, which influence the strength of regularization and decision boundary, respectively. For the random forest, we tuned the number of predictors randomly sampled at each split during training, the number of trees, and the minimum number of data points in a node required for the node to be split further. For XGBoost, we tuned the same parameters as those for the random forest model in addition to the maximum depth of trees, learning rate, the fraction of data exposed to the fitting routine, and the reduction in the loss function required for further splits. For the two neural network models, we tuned the number of units in the hidden model, the weight decay, and the number of training iterations.
 
-Data for smallmouth bass from 2013 included observations for other Micropterus spp. (listed as “black bass”) whereas data in 2014 were broken down by species. For consistency, all black bass data from 2014 were pooled. Hereafter, references to “smallmouth bass” refer to pooled “black bass” data. Furthermore, data were divided by fish size (< 150 mm and > 150 mm). Due to the limited numbers of observations, these data were also pooled, although smaller fish are unlikely piscivorous and may exhibit different behaviors and habitat choices compared to large conspecifics. Finally, because there were so few observations that included more than one predator, the original count data were transformed into presence/absence data.
+Given the computational requirements to train this many models, we took several steps to improve computation time. First, we parallelized our workflow were possible using the R packages `crew` (v. `r packageVersion("crew")`) and `targets` (v. `r packageVersion("targets")`). Additionally, we used a Latin hypercube grid search [@husslageSpaceFillingLatinHypercube2008] rather than a granular grid search to determine the search space for hyperparameters. This allowed searching a nearly random sample of parameter values without requiring an exhaustive search over a much larger granular combination of values. Finally, we performed our grid search with an ANOVA race with the R package `finetune` (v. `r packageVersion("finetune")`) [@kuhnFutilityAnalysisCrossValidation2014]. Briefly, after a burn in period of 3 resamples, the performance of hyperparameter combinations was evaluated at each resampling step using repeated-measures ANOVA to eliminate those that were unlikely to be the best. Thus, the best performing model can often be identified without performing all specified resampling steps. Even if all resampling steps are performed, the number of models evaluated at each step is usually reduced, improving overall computation time.
 
-!!! info for other data source!!!!
-
-## models
-We included three linear models in the study.
-
-- FHAST uses a simple general linear model (GLM) without interaction or polynomial terms. This was used as a baseline comparison for other models in the study.
-
-- We also allowed the framework to test GLMs with interactions and/or polynomial terms.
-
-- We also included a GLM with L1 and L2 regularization ("elastic net").
-
-We included four nonlinear models in the study.
-
-- a support vector machine (SVM) with radial basis function kernel
-	- this model optimizes a hyperplane separating labels
-
-- Random Forest
-	- A classifier that is an ensemble of decision trees that grows randomly with subsampled data
-
-- XGBoost
-	- A classifier that is an ensemble of decision trees that grows greedily
-
-- Neural Net
-	- multilayer perceptron model (a.k.a. a single layer, feed-forward neural network)
-
-- Ensemble Neural net
-	- a collection of neural networks forming an ensemble via bagging (aka [bootstrap aggregating](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C7&q=bagging+predictors+breiman+1996&oq=Bagging+predictors+)) ensemble models.
-
-## training and evaluation
-
-### pipeline - Do we need a flow diagram?
+<!-- ### pipeline - Do we need a flow diagram?
 - data split: 80% training data, 20% reserved for testing data
 - training data used for X-fold cross validation repeated x times.
 - Where appropriate, models were trained using different hyperparameter combinations.
@@ -117,12 +82,17 @@ We included four nonlinear models in the study.
 - models trained using tidymodels framework
 - each model tested with various feature engineering options following xxxx
 - the importance of model features was estimated using permutation;
-- permutation importance is a model-agnostic tool that can be used to compare feature importance across different models
+- permutation importance is a model-agnostic tool that can be used to compare feature importance across different models -->
 
-## code
-- pipeline was managed using the targets framework, which is a Make-like pipeline manager for R. Models were trained and tested using the tidymodels framework. All code is available on github, including the code for producing this manuscript.
+## Data analysis
+All analyses and visualizations were conducted in R. The importance of model features was estimated with permutation importance using the R package `vip` (v. `r packageVersion("vip")`). Figures were made using `ggplot2` (v. `r packageVersion("ggplot2")`).
+
+## Code
+All code is available on Github, including the code for producing this manuscript: [https://github.com/mrguyperson/pred_predictive_modeling](https://github.com/mrguyperson/pred_predictive_modeling).
 
 # Results
+## Modeling pipeline
+
 
 ![roc auc plot](`r tar_read(roc_plot)`){#fig-roc-auc}
 
