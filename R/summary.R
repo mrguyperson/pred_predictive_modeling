@@ -86,139 +86,240 @@ summarize_var_imp <- function(modeling_results, permutations) {
       select(-c(tar_seed, variable_importances))
 }
 
-plot_var_imp <- function(var_imp_summary, palette) {
-   plot1<-var_imp_summary %>%
-    filter(species == "lmb") %>%
-    clean_model_names() %>%
-    clean_var_names() %>% 
-    ggplot(aes(
-        x = var_imp,
-        y = variable,
-        fill = model_name
-        )) +
-    geom_boxplot() +
-    scale_fill_manual(
-         values = palette,
-         breaks = c(
-               "FHAST",
-               "GLM",
-               "Regularized GLM",
-               "SVM",
-               "Random forest",
-               "XGBoost",
-               "NNet",
-               "Ensemble NNet", name = ""
-            )
-         ) +
-    scale_x_continuous(breaks = seq(0,0.2,.1), limits = c(0, 0.2)) +
-    ylab("") +
-    xlab("Variable importance") +
-    theme_classic(
-        base_size = 25
-        ) +
-    facet_wrap(
-        ~species,
-      #   labeller = as_labeller(c(lmb = "Lm. bass"))
-        )
+plot_var_imp <- function(var_imp_summary) {
+   # plot1<-var_imp_summary %>%
+   #  filter(species == "lmb") %>%
+   #  clean_model_names() %>%
+   #  clean_var_names() %>% 
+   #  ggplot(aes(
+   #      x = var_imp,
+   #      y = variable,
+   #      fill = model_name
+   #      )) +
+   #  geom_boxplot() +
+   #  scale_fill_manual(
+   #       values = palette,
+   #       breaks = c(
+   #             "FHAST",
+   #             "GLM",
+   #             "Regularized GLM",
+   #             "SVM",
+   #             "Random forest",
+   #             "XGBoost",
+   #             "NNet",
+   #             "Ensemble NNet", name = ""
+   #          )
+   #       ) +
+   #  scale_x_continuous(breaks = seq(0,0.2,.1), limits = c(0, 0.2)) +
+   #  ylab("") +
+   #  xlab("Variable importance") +
+   #  theme_classic(
+   #      base_size = 25
+   #      ) +
+   #  facet_wrap(
+   #      ~species,
+   #    #   labeller = as_labeller(c(lmb = "Lm. bass"))
+   #      )
 
 
-   plot2<-var_imp_summary %>%
-      filter(species == "sasq") %>%
+   # plot2<-var_imp_summary %>%
+   #    filter(species == "sasq") %>%
+   #    clean_model_names() %>%
+   #    clean_var_names() %>% 
+   #    ggplot(aes(
+   #       x = var_imp,
+   #       y = variable,
+   #       fill = model_name
+   #       )) +
+   #    geom_boxplot() +
+   #    scale_fill_manual(
+   #          values = palette,
+   #          breaks = c(
+   #                "FHAST",
+   #                "GLM",
+   #                "Regularized GLM",
+   #                "SVM",
+   #                "Random forest",
+   #                "XGBoost",
+   #                "NNet",
+   #                "Ensemble NNet", name = ""
+   #             )
+   #          ) +
+
+   #    scale_x_continuous(breaks = seq(0,0.2,.1), limits = c(0, 0.2)) +
+   #    ylab("") +
+   #    xlab("") +
+   #    theme_classic(
+   #       base_size = 25
+   #       ) +
+   #    facet_wrap(
+   #       ~species,
+   #       # strip.position = 'left',
+   #       ncol = 2,
+   #       # labeller = as_labeller(c(smb = "Sm. bass",sasq = "Pikeminnow"))
+   #       )
+
+   # plot3<-var_imp_summary %>%
+   #    filter(species == "smb") %>%
+   #    clean_model_names() %>%
+   #    clean_var_names() %>% 
+   #    ggplot(aes(
+   #       x = var_imp,
+   #       y = variable,
+   #       fill = model_name
+   #       )) +
+   #    geom_boxplot() +
+   #    scale_fill_manual(
+   #          values = palette,
+   #          breaks = c(
+   #                "FHAST",
+   #                "GLM",
+   #                "Regularized GLM",
+   #                "SVM",
+   #                "Random forest",
+   #                "XGBoost",
+   #                "NNet",
+   #                "Ensemble NNet"
+   #             )
+   #          ) +
+   #    scale_x_continuous(breaks = seq(0,0.2,.1), limits = c(0, 0.2)) +
+   #    ylab("") +
+   #    xlab("Variable importance") +
+   #    labs(fill = NULL) +
+   #    theme_classic(
+   #       base_size = 25
+   #       ) +
+   #    facet_wrap(
+   #       ~species,
+   #       # strip.position = 'left',
+   #       ncol = 2,
+   #       # labeller = as_labeller(c(smb = "Sm. bass",sasq = "Pikeminnow"))
+   #       ) +
+   #    guides(fill = guide_legend(nrow = 2))
+
+   # leg <- get_legend(plot3) %>%
+   #    ggarrange() +
+   #    theme_classic(base_size = 40)
+
+   # plot4 <- ggarrange(
+   #    plot2,
+   #    plot3,
+   #    ncol = 1,
+   #    legend = "none"
+   # )
+
+   # plot5<- ggarrange(
+   #    plot4,
+   #    plot1,
+   #    ncol = 2,
+   #    common.legend = TRUE,
+   #    legend = "bottom",
+   #    legend.grob = get_legend(plot3)
+   #    )
+   # save_path <- file.path("output", "var_imp.png")
+   # ggsave(save_path, plot5, height = 20, width = 16)
+   # save_pathfont_add_google("Libre Franklin", "franklin")
+   showtext_opts(dpi=600)
+   showtext_auto()
+
+   data <- var_imp_summary %>%
       clean_model_names() %>%
-      clean_var_names() %>% 
-      ggplot(aes(
-         x = var_imp,
-         y = variable,
-         fill = model_name
-         )) +
-      geom_boxplot() +
-      scale_fill_manual(
-            values = palette,
-            breaks = c(
-                  "FHAST",
-                  "GLM",
-                  "Regularized GLM",
-                  "SVM",
-                  "Random forest",
-                  "XGBoost",
-                  "NNet",
-                  "Ensemble NNet", name = ""
-               )
-            ) +
+      clean_var_names() %>%
+      summarize(var_imp = median(var_imp), .by = c(species, model_name, variable)) %>%
+      mutate(var_imp = if_else(var_imp >= 0, var_imp, 0))
 
-      scale_x_continuous(breaks = seq(0,0.2,.1), limits = c(0, 0.2)) +
-      ylab("") +
-      xlab("") +
-      theme_classic(
-         base_size = 25
-         ) +
-      facet_wrap(
-         ~species,
-         # strip.position = 'left',
-         ncol = 2,
-         # labeller = as_labeller(c(smb = "Sm. bass",sasq = "Pikeminnow"))
+   model_names <- data %>%
+      pull(model_name) %>% 
+      unique()
+
+   make_var_imp_subplot <- function(data, species_name) {
+      data_filtered <- data %>%
+         filter(species %in% species_name)
+
+      y_lim_upper <- data_filtered %>%
+         pull(variable) %>%
+         unique() %>%
+         length()
+
+      data_filtered %>%
+         ggplot(aes(x = model_name, y = variable, fill = var_imp)) +
+         geom_tile() +
+         scale_fill_continuous(
+            type = "viridis", 
+            limits = c(0, 0.15),
+            breaks = seq(0, 0.15, by = 0.05),
+            # low = "dodgerblue",
+            # mid = "white",
+            # high = "#d83030"
+                  ) +
+         labs(
+            x = NULL, 
+            y = NULL, 
+            fill = "Variable importance",
+            title = species_name
+            ) +
+         coord_cartesian(expand = FALSE, clip = "off", ylim = c(0.5, y_lim_upper + 0.5)) +
+         theme_bw() +
+         theme(
+            axis.text.y = element_text(margin = margin(l = 0)),
+            axis.ticks = element_blank(),
+            panel.border = element_rect(color = "black", linewidth = 0.25)
+
+         )
+         # facet_wrap(~species, ncol = 1)
+   }
+
+   # smb_sasq <- make_var_imp_subplot(data, c("Sm. bass","Pikeminnow"))
+   smb <- make_var_imp_subplot(data, c("Sm. bass")) +
+         annotate(         
+            geom = "segment",
+            x = 1:7 + 0.5,
+            xend = 1:7 + 0.5, 
+            y = 0.5, 
+            yend = 0,
+            linewidth = 0.2)
+   sasq <- make_var_imp_subplot(data, "Pikeminnow") +
+      theme(
+         axis.text.x = element_blank(),
+      )
+
+   lmb <- make_var_imp_subplot(data, "Lm. bass") +
+         annotate(         
+            geom = "segment",
+            x = 1:7 + 0.5,
+            xend = 1:7 + 0.5, 
+            y = 0.5, 
+            yend = -0,
+            linewidth = 0.2)
+
+   p3 <- (sasq / smb | lmb) + 
+      plot_layout(guides = "collect") &
+      # plot_annotation(tag_levels = c("A")) & 
+
+      theme(
+         axis.text = element_text(size = 6, color = "#000000"),
+         legend.axis.line = element_blank(),
+         legend.frame = element_rect(color = "black", linewidth = 0.2),
+         legend.position = "bottom",
+         legend.text = element_text(size = 6, color = "black"),
+         legend.text.position = "bottom",
+         legend.ticks = element_line(color = "black", linewidth = 0.1),
+         legend.title = element_text(hjust = 0.5, size = 7, color = "black"),
+         legend.title.position = "top",
+         # plot.margin = margin(l = 5, t = 5, r = 5),
+         plot.title = element_text(size = 8, face = "bold"),
+         # strip.text = element_text(family = "franklin", hjust = -0.02, face = "bold"),
+         # strip.background = element_blank(),
+         text = element_text(family = "franklin")
+
          )
 
-   plot3<-var_imp_summary %>%
-      filter(species == "smb") %>%
-      clean_model_names() %>%
-      clean_var_names() %>% 
-      ggplot(aes(
-         x = var_imp,
-         y = variable,
-         fill = model_name
-         )) +
-      geom_boxplot() +
-      scale_fill_manual(
-            values = palette,
-            breaks = c(
-                  "FHAST",
-                  "GLM",
-                  "Regularized GLM",
-                  "SVM",
-                  "Random forest",
-                  "XGBoost",
-                  "NNet",
-                  "Ensemble NNet"
-               )
-            ) +
-      scale_x_continuous(breaks = seq(0,0.2,.1), limits = c(0, 0.2)) +
-      ylab("") +
-      xlab("Variable importance") +
-      labs(fill = NULL) +
-      theme_classic(
-         base_size = 25
-         ) +
-      facet_wrap(
-         ~species,
-         # strip.position = 'left',
-         ncol = 2,
-         # labeller = as_labeller(c(smb = "Sm. bass",sasq = "Pikeminnow"))
-         ) +
-      guides(fill = guide_legend(nrow = 2))
 
-   leg <- get_legend(plot3) %>%
-      ggarrange() +
-      theme_classic(base_size = 40)
-
-   plot4 <- ggarrange(
-      plot2,
-      plot3,
-      ncol = 1,
-      legend = "none"
-   )
-
-   plot5<- ggarrange(
-      plot4,
-      plot1,
-      ncol = 2,
-      common.legend = TRUE,
-      legend = "bottom",
-      legend.grob = get_legend(plot3)
-      )
    save_path <- file.path("output", "var_imp.png")
-   ggsave(save_path, plot5, height = 20, width = 16)
+
+   ggsave(save_path, p3, height = 6, width = 7, dpi = 600)
    save_path
+
 }
 
 object_to_string <- function(var) {
@@ -244,24 +345,24 @@ clean_model_names <- function(df) {
          model_name = fcase(
             model_name == "xgb", "XGBoost", 
             model_name == "svm", "SVM", 
-            model_name == "rf", "Random forest",
+            model_name == "rf", "Random\nforest",
             model_name == "regression", "GLM",
             model_name == "nnet", "NNet",
-            model_name == "glmnet", "Regularized GLM",
+            model_name == "glmnet", "L1+L2\nGLM",
             model_name == "fhast", "FHAST",
-            model_name == "bag", "Ensemble NNet"
+            model_name == "bag", "Bagged\nNNet"
     ),
          model_name = factor(
             model_name,
-            levels = rev(c(
+            levels = (c(
                "FHAST",
                "GLM",
-               "Regularized GLM",
+               "L1+L2\nGLM",
                "SVM",
-               "Random forest",
+               "Random\nforest",
                "XGBoost",
                "NNet",
-               "Ensemble NNet"
+               "Bagged\nNNet"
             )),
             ordered = TRUE
          ),
@@ -287,17 +388,17 @@ clean_var_names <- function(df) {
       mutate(variable = fcase(
          variable == "turbidity", "turbidity",
          variable == "weathercode", "weather",
-         variable == "do", "diss. oxy.",
+         variable == "do", "diss.\noxy.",
          variable == "ambient_conductivity", "conductivity",
-         variable == "watertemperature", "water temp.",
-         variable == "channel_type", "channel type",
+         variable == "watertemperature", "water\ntemp.",
+         variable == "channel_type", "channel\ntype",
          variable %like% "substrate", "substrate",
-         variable == "tide", "tide stage",
-         variable == "emergent", "emergent veg.",
-         variable == "floating", "floating veg.",
-         grepl("wood|structure", variable), "woody structure",
+         variable == "tide", "tide\nstage",
+         variable == "emergent", "emergent\nveg.",
+         variable == "floating", "floating\nveg.",
+         grepl("wood|structure", variable), "woody\nstructure",
          variable %like% "depth", "depth",
-         variable == "bank_type", "bank type",
+         variable == "bank_type", "bank\ntype",
          variable == "veg", "vegetation",
          variable == "velocity", "velocity",
          variable == "shade", "shade"

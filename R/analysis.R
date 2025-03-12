@@ -543,3 +543,53 @@ train_and_test <- function(data, model_type, habitat_variable, is_fhast) {
 #                          "#F0E442", "#56B4E9", "#E69F00",
 #                          "#0072B2", "#009E73", "#CC79A7"
 #                          )
+
+# df <- modeling_results %>%
+#     select(testing_results,model_name, species, tar_seed) %>%
+#     unnest(testing_results) %>%
+#     filter(.metric == "roc_auc") %>%
+#     select(estimate = .estimate, model_name, species, tar_seed)
+
+# df %>% 
+#     group_by(species) %>% 
+#     group_split() %>%
+#     map(~ aov(estimate ~ model_name, data = .x)) %>%
+#     map(tidy)
+
+# aov(estimate ~ model_name + species, data =df) %>% tidy()
+
+# quantiles_testing <- df %>%
+#     summarize(
+#         q25 = quantile(estimate, 1/4),
+#         median = median(estimate),
+#         q75 = quantile(estimate, 3/4),
+#         .by = c(model_name, species)
+#         ) %>%
+#     arrange(species, median)
+
+# quantiles_testing %>%
+#     slice_tail(n=3, by = species) %>%
+#     count(model_name)
+
+
+# training <- modeling_results %>%
+#     select(training_results,model_name, species, tar_seed) %>%
+#     unnest(training_results) %>%
+#     filter(.metric == "roc_auc") %>%
+#     select(estimate = .estimate, model_name, species, tar_seed)
+
+# quantiles_training <- training %>%
+#     summarize(
+#         q25 = quantile(estimate, 1/4),
+#         median = median(estimate),
+#         q75 = quantile(estimate, 3/4),
+#         .by = c(model_name, species)
+#         ) %>%
+#     arrange(median, species)
+
+# quantiles_training %>%
+#     left_join(quantiles_testing, join_by(model_name, species)) %>%
+#     mutate(diff = (median.y - median.x)) %>%
+#     select(model_name, species, diff) %>%
+#     arrange(-abs(diff)) %>%
+#     pull(diff) %>% hist()

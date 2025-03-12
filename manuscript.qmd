@@ -92,7 +92,21 @@ All code is available on Github, including the code for producing this manuscrip
 
 # Results
 ## Modeling pipeline
+We randomly allocated 80% of the data to a training set and the remainder to a test set. We stratifed the split by presence/absence data so that the training and testing sets had equivalent proportions of both classes. We also randomly upsampled the training set so that the overall numbers of presences and absences were equivalent. This prevented the models from being optimized to simply predict all absences.
 
+We then used the training data to tune model hyperparameters. Model hyperparameters were tuned using five-fold cross validation. That is, the training data were further split randomly into five parts stratified by presence/absence. Four of the five parts were used to train the models and the fifth part was used to make predictions and evaluated model performance. The procedure was then repeated for each of the remaining training data splits. 
+
+Training workflows were unique to each model. First, data reprocessing steps appropriate to the model type were performed; e.g., creating dummy variables, normalizing the data, and log-transforming the data. Processed training data were then used to train and evaluate models built using different combinations of hyperparameters values select by a Latin hypercube grid search. Model performance was evaluated based on the area under the receiver operating curve (AUROC), which has a value from 0 to 1 that indicates a model's discriminatory power. For example, a value of 0.75 indcates that 75% of the time the model assigns a higher probably of presence to a random site with fish than to a random site without fish.
+
+We selected the model with the highest average AUROC over the five-fold training. This model was then retrained using the full training data set and evaluated using the test set, which had been held out for the entire process. We repeated this process XXXX times to prevent our results from being overly influenced by chance.
+
+
+
+## model performance
+The models with the highest AUROC for Sacramento pikeminnow, smallmouth bass, and largemouth base were xxxx (Mean, IQR), xxxx (Mean, IQR), and xxxx (Mean, IQR), respectively (@fig-roc-auc). We also evaluated model overfitting by comparing performance on training data vs. testing data. The largest difference in median AUROC for Sacramento pikeminnow, smallmouth bass, and largemouth base were xxxx, xxx, and xxx respectively, while most values were under xxxx. These small differences demonstrate that the models performed similarly for the testing data and indicate that the models were generalizable. 
+
+## model interpretability
+We used permutational importance to compare feature importance across different models
 
 ![roc auc plot](`r tar_read(roc_plot)`){#fig-roc-auc}
 
@@ -102,12 +116,6 @@ All code is available on Github, including the code for producing this manuscrip
 
 ![maps](/output/hab_rating_all_models.jpg){#fig-maps}
 
-
-## model selection
-
-## model performance
-
-## model interpretability
 
 # Discussion
 
@@ -126,5 +134,4 @@ All code is available on Github, including the code for producing this manuscrip
 - areas that are too small may inflate the number of absences in the data, so the model may simply predict that all cells are empty.
 
 ## data availability limitations
-- data of this nature are time and energy intensive to collect, especially if they are to include the adequate spatiotemporal coverage
-- data are also improved if sampling is exhaustive; e.g., multiple passes with electroshockers to catch as many fish as possible.
+One challenge for future use of these models for predicting predator distributions is data limitation. Appropriate data are time and energy intensive to collect, especially if they are to include the adequate spatiotemporal coverage as well as sampling intensity at each transect (e.g., multiple passes with electroshockers to catch as many fish as possible). Thus, absences are more likely to represent true negatives rather than fish missed during sampling, and the number of positives is increased. However, this strategy clearly increases the cost to collect data and balancing the size of the study area (i.e., how generalizable the model is spatially), the time frequency of sampling (i.e., how generalizable the model is temporally), and the sampling intensity (i.e., how closely the data capture reality) may be logistically challenging. Understanding how different models perform when one or more of these dimensions is compromised is crucical to model selection, and will likely vary with species.

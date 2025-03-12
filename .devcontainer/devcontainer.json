@@ -50,7 +50,7 @@
             "packages": "libudunits2-dev,libxtst6,libxt6,libmagick++-dev,libglpk-dev"
         },
         "ghcr.io/rocker-org/devcontainer-features/r-packages:1": {
-            "packages": "cran/maptools,michaeldorman/shadow,inbo/inborutils,quarto,here,microbenchmark,tidymodels,kernlab,bonsai,lightgbm,ranger,poissonreg,pscl,doParallel,targets,tarchetypes,themis,crew,igraph,lutz,smoothr,exactextractr,raster,viridis,patchwork,leaflet,nlrx,qs,finetune,lme4,glmnet,nnet,baguette,stacks,vip,NeuralNetTools,ggpubr,xgboost"
+            "packages": "cran/maptools,michaeldorman/shadow,inbo/inborutils,quarto,here,microbenchmark,tidymodels,kernlab,bonsai,lightgbm,ranger,poissonreg,pscl,doParallel,targets,tarchetypes,themis,crew,igraph,lutz,smoothr,exactextractr,raster,viridis,patchwork,leaflet,nlrx,qs,finetune,lme4,glmnet,nnet,baguette,stacks,vip,NeuralNetTools,ggpubr,xgboost,showtext"
             // "cranMirror": "https://packagemanager.posit.co/cran/2023-07-01"
         },
     },
