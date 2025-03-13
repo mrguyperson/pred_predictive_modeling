@@ -106,7 +106,7 @@ We selected the model with the highest average AUROC over the five-fold training
 The models with the highest AUROC for Sacramento pikeminnow, smallmouth bass, and largemouth base were xxxx (Mean, IQR), xxxx (Mean, IQR), and xxxx (Mean, IQR), respectively (@fig-roc-auc). We also evaluated model overfitting by comparing performance on training data vs. testing data. The largest difference in median AUROC for Sacramento pikeminnow, smallmouth bass, and largemouth base were xxxx, xxx, and xxx respectively, while most values were under xxxx. These small differences demonstrate that the models performed similarly for the testing data and indicate that the models were generalizable. 
 
 ## model interpretability
-We used permutational importance to compare feature importance across different models
+We used permutational importance to compare feature importance across different models [@fig-var-imp].
 
 ![roc auc plot](`r tar_read(roc_plot)`){#fig-roc-auc}
 
@@ -118,6 +118,16 @@ We used permutational importance to compare feature importance across different 
 
 
 # Discussion
+ - importance of predation on management outcomes
+ - invasive speices
+ - traditional statistics models can identify key environmental variables but tend not to be general enough for predictions
+ - If environments can be adequately characterized then ML can do both
+ - this is still early days for applications of such models in htese subjects
+
+ - develpped flexible pipeline to benchmark models
+ - say what i found
+ - summarize how pipeline is arranged
+ - transition to how data collection needs to be standardized/thought out
 
 ## trade-offs among models
 - nonlinear models can be harder to interpret but may offer improved predictions
@@ -126,12 +136,15 @@ We used permutational importance to compare feature importance across different 
 ## method may be species specific
 - hard to collect data for species that appear sporadically in large numbers
 - in effective for species that are highly mobile
-
+<!-- 
 ## limitations for "cell" size when collecting data
+
 - sampling area size should reflect the behavior of a fish
 - if data transects are too large, then environmental heterogeneity may be overly "averaged"; i.e., each transect may be too similar
 - similarly, larger areas are more likely to contain fish, so the model may simply predict fish in every "cell"
-- areas that are too small may inflate the number of absences in the data, so the model may simply predict that all cells are empty.
+- areas that are too small may inflate the number of absences in the data, so the model may simply predict that all cells are empty. -->
 
 ## data availability limitations
 One challenge for future use of these models for predicting predator distributions is data limitation. Appropriate data are time and energy intensive to collect, especially if they are to include the adequate spatiotemporal coverage as well as sampling intensity at each transect (e.g., multiple passes with electroshockers to catch as many fish as possible). Thus, absences are more likely to represent true negatives rather than fish missed during sampling, and the number of positives is increased. However, this strategy clearly increases the cost to collect data and balancing the size of the study area (i.e., how generalizable the model is spatially), the time frequency of sampling (i.e., how generalizable the model is temporally), and the sampling intensity (i.e., how closely the data capture reality) may be logistically challenging. Understanding how different models perform when one or more of these dimensions is compromised is crucical to model selection, and will likely vary with species.
+
+Another consideration is the size of each transect. Transects that are too large may have environmental parameters that differ little from the average of the whole study site. Additionally, larger transects are more likely to contain fish, so the model training process may simply converge on models that predict fish at every location. Conversely, using transects that are too small may result in an overwhelming number of absences simply because fish move even within their own territories, resulting in models that predict absences at every location. Therefore, transects should be small enough to contain a heterogenous mix of environmental parameters, while being large enough to be comparable to a fish's territorial size. [mention dataset that failed?] Such modeling approaches may be inappropriate or need additional considerations for species that are highly mobile or seasonally sporadic, such as striped bass in the Sacramento River [ref].

@@ -4,7 +4,10 @@ train_and_test <- function(data, model_type, habitat_variable, is_fhast) {
     splits <- initial_split(data, strata = "pres_abs")
     training_data <- training(splits)
     wf_sets <- make_workflow_set(model_type, training_data)
+    start <- Sys.time()
     wf_results <- get_workflow_set_results(wf_sets)
+    end <- Sys.time()
+    duration <- as.numeric(end - start)
     wf_results_ranked <- wf_results %>% 
         rank_results(rank_metric = metric, select_best = TRUE)
     name_best_recipe <- wf_results_ranked$wflow_id[[1]]
@@ -37,7 +40,8 @@ train_and_test <- function(data, model_type, habitat_variable, is_fhast) {
         testing_results = list(testing_results),
         variable_importances = list(var_imp),
         name_best_model_recipe = name_best_recipe,
-        fhast_predictions = list(predictions)
+        fhast_predictions = list(predictions),
+        duration = duration
     ))
 }
 
