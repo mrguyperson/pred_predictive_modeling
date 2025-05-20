@@ -36,17 +36,23 @@ csl: https://www.zotero.org/styles/ecological-modelling
 library(targets)
 ```
 
-# Introduction 
-Freshwater biodiversity is threatened worldwide by anthropogenic activity [@allanOverfishingInlandWaters2005;@arthingtonFishConservationFreshwater2016;@reidEmergingThreatsPersistent2019]. Large, highly migratory fish spcies that require freshwater for all or part of their life histories are particularly vulnerable for many reasons, including diverse habitat requirements, large body size, and high market value [@heDisappearingGiantsReview2017;@stoneLastLeviathans2007;@waldmanNorthAmericanDiadromous2022]. Pacific salmonids (*Onchorhynchus* spp.) are culturally, economically, and ecologically important migratory fish that spawn in some of the most highly modified river systems in North America, which have been impacted by dams [@waplesEvolutionaryResponsesNative2008;@storchReviewPotentialConservation2022], agriculture [@macnealePesticidesAquaticFood2010], invasive species [@Kuehne2012;@Michel2018], channel modification [@richterEcologicallySustainableWater2003;@gregory29HistoricalChannel2007;@merzDisruptionNaturalDisturbance2024], and climate change [@siegelImpactsClimateChange2020]. 
+# Introduction
 
-The Sacramento River is the longest river in California and historically supported spawning and nursery ground for Pacific salmonids, providing an important food source for humans for thousands of years [@yoshiyamaHistoricalAbundanceDecline1998;@yoshiyamaHistorySalmonPeople1999]. However, the region has been impacted dramatically since the mid-nineteenth century by damming, mining, agriculture, fishing, and other anthropogenic activities [@munschOneHundredseventyYears2022]. Thus, the spawning migration runs of salmon have been greatly diminished and several are listed on the Endangered Species List [cite]. Habitat restoration projects have been undertaken for decades to support different aspects of salmonid life history in the Sacramento River basin [@goletSuccessesFailuresSuggested2013]. However, changing local habitat parameters can induce changes in populations of piscivorous fish that prey on juvenile salmonds [@Sabal2016] [any refs showing restoration unintetionally increasing preds??]. Juvenile salmonids are prey for both native predators, such as Sacramento pikeminnow (*Ptychocheilus grandis*), and numerous introduced predators, such as black bass (*Micropterus* spp.), striped bass (*Morone saxatilis*), white catfish (*Ameiurus catus*), and channel catfish (*Ictalurus punctatus*) [@Michel2018]. Understanding how restoration projects affect salmonid predators is thus crucial for management efforts.
+Freshwater biodiversity is increasingly threatened by anthropogenic activity, including overexploitation, habitat degradation, and invasive species introductions [@allanOverfishingInlandWaters2005; @arthingtonFishConservationFreshwater2016; @reidEmergingThreatsPersistent2019]. Large, highly migratory fish species that depend on freshwater systems for all or part of their life cycles are especially vulnerable due to their diverse habitat needs, large body sizes, and economic value [@heDisappearingGiantsReview2017; @stoneLastLeviathans2007; @waldmanNorthAmericanDiadromous2022]. Pacific salmonids (*Oncorhynchus* spp.) are culturally, economically, and ecologically important migratory fish that spawn in some of the most heavily modified river systems in North America. These systems have been significantly affected by dams [@waplesEvolutionaryResponsesNative2008; @storchReviewPotentialConservation2022], agriculture [@macnealePesticidesAquaticFood2010], invasive predators [@Kuehne2012; @Michel2018], channel modification [@richterEcologicallySustainableWater2003; @gregory29HistoricalChannel2007; @merzDisruptionNaturalDisturbance2024], and climate change [@siegelImpactsClimateChange2020].
 
-Machine learning (ML) models are particularly suited to making new predictions from existing data and are growing in popularity for ecological applications [@rubbensMachineLearningMarine2023;@borowiecDeepLearningTool2022;@goodwinUnlockingPotentialDeep2022;@pichlerMachineLearningDeep2023]. Despite their effectiveness, many ML models are "black boxes," which reduces their interpretability and may undermine user confidence in the results compared with more familiar statistical models, especially when the results are used to make important decisions [@shinEffectsExplainabilityCausability2021;@rudinStopExplainingBlack2019]. However, several approaches exist for extracting meaning from ML models [@lucasTranslucentBoxInterpretable2020;@pichlerMachineLearningDeep2023], such as permutational importance [@altmannPermutationImportanceCorrected2010]. Another area of friction when using ML models in ecology is that there are many models to choose from, many potential applications, and no clear guidelines for which models may be appropriate. For example, sophisticated, nonlinear models, such as neural networks, may be most appropriate for some applications, but they are slow to train and difficult to interpret, and in some cases may offer little predictive advantage over a simpler model such as logistic regression [@pichlerMachineLearningDeep2023; @rudinOptimizedScoringSystems2018;@rudinStopExplainingBlack2019]. Thus, understanding and justifying the choice of model for a given application is important.
+The Sacramento River, California’s longest river, historically supported vast salmonid runs and provided a key subsistence resource for Indigenous communities [@yoshiyamaHistoricalAbundanceDecline1998; @yoshiyamaHistorySalmonPeople1999]. Since the mid-19th century, the river has been subject to extensive anthropogenic impacts including mining, dam construction, agriculture, and urbanization [@munschOneHundredseventyYears2022], leading to major declines in salmon populations. Several salmonid runs are now listed under the U.S. Endangered Species Act !!!citecite!!!. While habitat-restoration projects have been undertaken to support salmonid recovery [@goletSuccessesFailuresSuggested2013], such interventions can inadvertently alter local habitat in ways that favor piscivorous predators. For example, engineered structures like riprap or altered flow regimes may increase ambush habitat for non-native predators [@Sabal2016; @Michel2018]. 
 
-Here, we developed a robust ML pipeline for predicting the presence/absence of common predator of Sacramento River salmonids. To our knowledge, no study has explored the use of machine learning models to predict the presence/absence of predatory freshwater fish at a fine spatial scale based on environmental parameters. Our pipeline includes several linear and nonlinear models to explore which algorithms may be most appropriate for this application. Models are compared based on predictive performance and training time [!!TODO!!]. We demonstrate the use of the pipeline with two case studies (smallmouth bass and Sacramento pikeminnow from the lower Sacremento River and largemouth bass from the Sacramento River delta) based on field data. The framework outlined here is flexible enough that it could be applied to other river systems where similar data are available.
+Juvenile salmonids in the Sacramento River system are preyed upon by both native species, such as Sacramento pikeminnow (Ptychocheilus grandis), and non-native predators including smallmouth and largemouth bass (Micropterus spp.), striped bass (Morone saxatilis), white catfish (Ameiurus catus), and channel catfish (Ictalurus punctatus) [@Michel2018]. Therefore, understanding how environmental conditions influence predator presence—and how those patterns may be affected by restoration or management actions—is a critical step for designing interventions that minimize harm to native fish populations.
 
+Machine learning (ML) models offer promising tools for spatial prediction and habitat suitability modeling, and their use in ecology is rapidly expanding [@rubbensMachineLearningMarine2023; @borowiecDeepLearningTool2022; @goodwinUnlockingPotentialDeep2022; @pichlerMachineLearningDeep2023]. These models can capture complex nonlinear relationships among variables and are particularly suited for generating predictions from high-dimensional environmental data. However, their use is often limited by concerns over interpretability, as many ML models are perceived as "black boxes" that make decisions in ways that are difficult to understand or justify [@rudinStopExplainingBlack2019; @shinEffectsExplainabilityCausability2021]. Recent advances in model interpretation methods, such as permutation-based variable importance, offer ways to mitigate this issue and make ML more accessible for applied ecological decision-making [@lucasTranslucentBoxInterpretable2020; @altmannPermutationImportanceCorrected2010].
+
+Another key challenge for applying ML in ecology is selecting an appropriate model. The trade-offs between performance, interpretability, and computational efficiency are often not well understood in the ecological literature. For example, while neural networks may provide superior predictive performance in some settings, they are computationally intensive and less interpretable than simpler models such as logistic regression [@rudinOptimizedScoringSystems2018].
+
+Here, we develop a flexible ML modeling pipeline to compare the performance of several linear and nonlinear models in predicting the presence/absence of common salmonid predators in the Sacramento River system. Specifically, we evaluate model performance for three species---Sacramento pikeminnow and smallmouth bass in the lower Sacramento River, and largemouth bass in the Sacramento–San Joaquin Delta---using field-collected environmental and fish observation data. We assess models based on predictive performance, interpretability (via variable importance), and training efficiency. To our knowledge, this is the first study to systematically benchmark ML approaches for fine-scale predator distribution modeling in a large, managed freshwater river system. The pipeline presented here can be adapted to other rivers where data are available and can support more predictive, spatially-informed fisheries management.
 
 # Methods (do we need a "study area" section?)
+
+```{=html}
 <!-- 
 ## study areas
  - Sacramento River
@@ -54,26 +60,55 @@ Here, we developed a robust ML pipeline for predicting the presence/absence of c
  
  - Sacramento River delta
  - Do I need a map here?? -->
+```
 
 ## Data sources
+
 ### Sacramento River
+
 Models for the lower Sacramento were trained and tested using field data collected in 2013 and 2014 [@FISHBIO2014; @FISHBIO2015a]. Briefly, transects starting 15 feet from shore and moving towards shore were electroshocked and all fish were collected. Afterwards, environmental data were collected from each transect, including cover from submerged vegetation and woody debris (percent), presence/absence of shade, type of substrate, water depth (at 5 ft, 10 ft, and 15 ft from shore) and water velocity (at 5 ft, 10 ft, and 15 ft from shore). The data were then cleaned and parsed. Vegetation and wood data were originally reported as percent ranges. The mean value of each range was used and converted to a proportion. Substrate classification varied among study years, and the vast majority of values were either rocky or not; therefore, all substrate classifications that included the word "rocky" were simplified to "rock". Gravel, which appeared very infrequently, was classified as "rock." All other substrates were classified as "not rock". Finally, water depth and velocity values were averaged for each transect (i.e., the respective values at 5, 10, and 15 ft from shore) to yield a single depth or velocity value per transect.
 
-Although the data set provided records of several piscivorous fish species, we only used data for  smallmouth bass (*Micropterus dolomieu*) and Sacramento pikeminnow (*Ptychocheilus grandis*). Predators such as striped bass (*Morone saxatilis*) and channel catfish (*Ictalurus punctatus*), which feed on juvenile fish in the Sacramento Delta and can have a large impact on salmonids [e.g., @Lindley2003; @Michel2018], were excluded because only a individuals were recorded over a several year period. This indicates either that these species are not a significant influence on juvenile salmonid and sturgeon populations in this part of the river, or that they were simply missed during sampling. Regardless, the data were inadequate for modeling and therefore these species were excluded from this analysis.
+Although the data set provided records of several piscivorous fish species, we only used data for smallmouth bass (*Micropterus dolomieu*) and Sacramento pikeminnow (*Ptychocheilus grandis*). Predators such as striped bass (*Morone saxatilis*) and channel catfish (*Ictalurus punctatus*), which feed on juvenile fish in the Sacramento Delta and can have a large impact on salmonids [e.g., @Lindley2003; @Michel2018], were excluded because only a individuals were recorded over a several year period. This indicates either that these species are not a significant influence on juvenile salmonid and sturgeon populations in this part of the river, or that they were simply missed during sampling. Regardless, the data were inadequate for modeling and therefore these species were excluded from this analysis.
 
-Data from 2013 reported only observations of *Micropterus* species (listed as “black bass”), whereas data in 2014 reported *Micropterus* observations by species. For consistency with the 2013 observations, all black bass data from 2014 were pooled. Hereafter, references to “smallmouth bass” refer to pooled “black bass” data. Furthermore, observations included fish size (recorded as < 150 mm and > 150 mm). Due to the limited numbers of total observations in the data, we pooled fish of all sizes per species, even though smaller fish are less likely to be piscivorous and may exhibit different behaviors and habitat choices compared with larger conspecifics. Finally, the original count data were transformed into presence/absence data because there were so few transects in which more than one individual per predator species was observed.
+Data from 2013 reported only observations of *Micropterus* species (listed as “black bass”), whereas data in 2014 reported *Micropterus* observations by species. For consistency with the 2013 observations, all black bass data from 2014 were pooled. Hereafter, references to “smallmouth bass” refer to pooled “black bass” data. Furthermore, observations included fish size (recorded as \< 150 mm and \> 150 mm). Due to the limited numbers of total observations in the data, we pooled fish of all sizes per species, even though smaller fish are less likely to be piscivorous and may exhibit different behaviors and habitat choices compared with larger conspecifics. Finally, the original count data were transformed into presence/absence data because there were so few transects in which more than one individual per predator species was observed.
 
 ### Sacramento--San Joaquin Delta -- how to cite?
-Our second data set was collected in the Sacramento--San Joaquin Delta as part of the California Department of Fish and Game’s (CDFG) Delta Resident Shoreline Fish Monitoring Project. This survey was conducted sporadically in three decades (1980s, 1990s, and 2000s) until December 2004. Shoreline areas were shocked for about 10 to 15 seconds in 20 m increments. Data were collected from each sampling area including location information, water quality (temperature, water clarity [Secchi disc, cm], conductivity [µmhos], and turbidity [NTU]), habitat characteristics (channel type, sampling area, vegetation type, bank type, depth [feet], and number of snags), environmental variables (surface flow (water velocity [m/s]), estimated wind speed [mph], and light [LUX]), electro-fishing settings (including time and distance of shoreline shocked), and catch (fish species count and length). We focused on largemouth bass since they were abundant in the data and a previous study using this data set found that largemouth bass had a high detection probability using the these sampling methods [@mckenzieEvaluatingRoleBoat2021], suggesting a lower occurrence of false negatives in the data. For consistency with the data from the Sacramento River, we converted counts into presencen/absence.
+
+Our second dataset was collected in the Sacramento–San Joaquin Delta as part of the California Department of Fish and Game’s (CDFG) Delta Resident Shoreline Fish Monitoring Project. This survey was conducted sporadically over three decades (1980s, 1990s, and 2000s) until December 2004. Shoreline areas were shocked for about 10 to 15 seconds in 20 m increments. Data were collected from each sampling area including location information, water quality (temperature, water clarity [Secchi disc, cm], conductivity [µmhos], and turbidity [NTU]), habitat characteristics (channel type, sampling area, vegetation type, bank type, depth [feet], and number of snags), environmental variables (surface flow (water velocity [m/s]), estimated wind speed [mph], and light [LUX]), electro-fishing settings (including time and distance of shoreline shocked), and catch (fish species count and length). 
+
+We focused on largemouth bass since they were abundant in the dataset and a previous study using these data found that largemouth bass had a high detection probability using the survey methods [@mckenzieEvaluatingRoleBoat2021], suggesting a relatively low false-negative rate. For consistency with the Sacramento River data, counts were converted to presence/absence.
 
 ## Models
-We included three linear models in the study: a general linear model (GLM) without interaction or polynomial terms, was used as a baseline comparison for other models in the study; a GLM with interactions and/or polynomial terms (several combinations used in the workflow); and a GLM with L1 and L2 regularization ("elastic net") [@zouRegularizationVariableSelection2005]. We also included four nonlinear models: a support vector machine (SVM) with radial basis function kernel, which optimizes a hyperplane separating categories [@scholkopfComparingSupportVector1997]; a random forest classifier, which is an ensemble of decision trees that grows randomly with subsampled data [@biauRandomForestGuided2016]; a gradient-boosted tree classifier (XGBoost), which is an ensemble of decision trees that grows greedily [@chenXGBoostScalableTree2016]; a multilayer perceptron model, which is a single layer, feed-forward neural network [@hornikMultilayerFeedforwardNetworks1989]; and an bagged neural net, which is a collection of neural networks forming an ensemble via bootstrap aggregating ("bagging") [@breimanBaggingPredictors1996].
+
+We compared seven classification models: two linear and five nonlinear. The linear models were:
+
+1. Generalized linear model (GLM) with a binomial (logistic) link, using only main effects. This served as a baseline for comparison.
+
+2. Elastic net-regularized logistic regression, which combines L1 (lasso) and L2 (ridge) penalties to handle multicollinearity and perform feature selection simultaneously [@zouRegularizationVariableSelection2005].
+
+The nonlinear models included:
+
+3. Support vector machine (SVM) with a radial basis function kernel, which classifies data by finding an optimal separating hyperplane [@scholkopfComparingSupportVector1997].
+
+4. Random forest, an ensemble of decision trees trained on bootstrapped subsets of the data [@biauRandomForestGuided2016].
+
+5. Gradient-boosted trees (XGBoost), a sequential tree-based model that fits new trees to the residuals of previous ones [@chenXGBoostScalableTree2016].
+
+6. Multilayer perceptron (MLP), a single-layer feedforward neural network [@hornikMultilayerFeedforwardNetworks1989].
+
+7. Bagged MLP, an ensemble of MLP models trained on different bootstrapped samples using bagging [@breimanBaggingPredictors1996].
 
 ## Training and evaluation
-Models were trained using the `tidymodels` metapackage (v. `r packageVersion("tidymodels")`) in R (v. `r getRversion()`). Preprocessing of data differed for each model and followed @kuhnFeatureEngineeringSelection2019. Because there were many more absences in the data, we upsampled rows with presences in the training data using the R package `themis` (v. `r packageVersion("themis")`). Otherwise, the optimal model may simply have predicted only absences. Models required hyperparameter tuning during training, which varied with the model. The base GLM and GLM with interactions and/or polynomial terms had no hyperparameters to tune. For the elastic net GLM, we tuned the penalty and mixture parameters, which determined the total amount of regularization and the mix of L1 and L2 regularization, respectively. For the SVM, we tuned cost and sigma, which influence the strength of regularization and decision boundary, respectively. For the random forest, we tuned the number of predictors randomly sampled at each split during training, the number of trees, and the minimum number of data points in a node required for the node to be split further. For XGBoost, we tuned the same parameters as those for the random forest model in addition to the maximum depth of trees, learning rate, the fraction of data exposed to the fitting routine, and the reduction in the loss function required for further splits. For the two neural network models, we tuned the number of units in the hidden model, the weight decay, and the number of training iterations.
 
-Given the computational requirements to train this many models, we took several steps to improve computation time. First, we parallelized our workflow were possible using the R packages `crew` (v. `r packageVersion("crew")`) and `targets` (v. `r packageVersion("targets")`). Additionally, we used a Latin hypercube grid search [@husslageSpaceFillingLatinHypercube2008] rather than a granular grid search to determine the search space for hyperparameters. This allowed searching a nearly random sample of parameter values without requiring an exhaustive search over a much larger granular combination of values. Finally, we performed our grid search with an ANOVA race with the R package `finetune` (v. `r packageVersion("finetune")`) [@kuhnFutilityAnalysisCrossValidation2014]. Briefly, after a burn in period of 3 resamples, the performance of hyperparameter combinations was evaluated at each resampling step using repeated-measures ANOVA to eliminate those that were unlikely to be the best. Thus, the best performing model can often be identified without performing all specified resampling steps. Even if all resampling steps are performed, the number of models evaluated at each step is usually reduced, improving overall computation time.
+Models were trained using the `tidymodels` metapackage (v. `r packageVersion("tidymodels")`) in R (v. `r getRversion()`). Preprocessing of data differed for each model and followed @kuhnFeatureEngineeringSelection2019.
 
+Because there were many more absences than presences in the data, we used upsampling to address class imbalance. Downsampling was not considered due to the small size of the datasets and the risk of discarding informative absence observations. To prevent data leakage, upsampling was applied only to the training data, and specifically within each resampling fold during cross-validation. This ensured that synthetic presence samples did not appear in both the training and validation subsets, preserving the validity of model performance estimates. Upsampling was performed using the R package `themis` (v. `r packageVersion("themis")`).
+
+Hyperparameters were tuned using five-fold cross-validation within the training set. The base GLM had no hyperparameters. For the elastic net, we tuned the penalty and mixture parameters, which control the strength and mix of L1 and L2 regularization. For the SVM, we tuned cost and sigma. For the random forest, we tuned the number of predictors randomly sampled at each split, the number of trees, and the minimum number of samples in a node required to attempt a split. For XGBoost, we tuned the same parameters as the random forest in addition to maximum tree depth, learning rate, subsample ratio, and the minimum loss reduction for further splits. For the two neural network models, we tuned the number of units in the hidden layer, the weight decay, and the number of training iterations.
+
+ We took several steps to improve computation time. First, we parallelized our workflow where possible using the R packages `crew` (v. `r packageVersion("crew")`) and `targets` (v. `r packageVersion("targets")`). Additionally, we used a Latin hypercube grid search [@husslageSpaceFillingLatinHypercube2008] to sample hyperparameter combinations without exhaustive enumeration. Finally, we used ANOVA racing with the R package `finetune` (v. `r packageVersion("finetune")`) [@kuhnFutilityAnalysisCrossValidation2014]. Briefly, after a burn-in period of three resamples, the performance of each hyperparameter combination was evaluated using repeated-measures ANOVA to eliminate poorly performing configurations early. This approach allows the best-performing model to be identified with fewer total resampling iterations, further reducing training time.
+
+```{=html}
 <!-- ### pipeline - Do we need a flow diagram?
 - data split: 80% training data, 20% reserved for testing data
 - training data used for X-fold cross validation repeated x times.
@@ -83,30 +118,59 @@ Given the computational requirements to train this many models, we took several 
 - each model tested with various feature engineering options following xxxx
 - the importance of model features was estimated using permutation;
 - permutation importance is a model-agnostic tool that can be used to compare feature importance across different models -->
+```
 
 ## Data analysis
+
 All analyses and visualizations were conducted in R. The importance of model features was estimated with permutation importance using the R package `vip` (v. `r packageVersion("vip")`). Figures were made using `ggplot2` (v. `r packageVersion("ggplot2")`).
 
 ## Code
-All code is available on Github, including the code for producing this manuscript: [https://github.com/mrguyperson/pred_predictive_modeling](https://github.com/mrguyperson/pred_predictive_modeling).
+
+All code is available on Github, including the code for producing this manuscript: <https://github.com/mrguyperson/pred_predictive_modeling>.
 
 # Results
+
 ## Modeling pipeline
+
 We randomly allocated 80% of the data to a training set and the remainder to a test set. We stratifed the split by presence/absence data so that the training and testing sets had equivalent proportions of both classes. We also randomly upsampled the training set so that the overall numbers of presences and absences were equivalent. This prevented the models from being optimized to simply predict all absences.
 
-We then used the training data to tune model hyperparameters. Model hyperparameters were tuned using five-fold cross validation. That is, the training data were further split randomly into five parts stratified by presence/absence. Four of the five parts were used to train the models and the fifth part was used to make predictions and evaluated model performance. The procedure was then repeated for each of the remaining training data splits. 
+We then used the training data to tune model hyperparameters. Model hyperparameters were tuned using five-fold cross validation. That is, the training data were further split randomly into five parts stratified by presence/absence. Four of the five parts were used to train the models and the fifth part was used to make predictions and evaluated model performance. The procedure was then repeated for each of the remaining training data splits.
 
 Training workflows were unique to each model. First, data reprocessing steps appropriate to the model type were performed; e.g., creating dummy variables, normalizing the data, and log-transforming the data. Processed training data were then used to train and evaluate models built using different combinations of hyperparameters values select by a Latin hypercube grid search. Model performance was evaluated based on the area under the receiver operating curve (AUROC), which has a value from 0 to 1 that indicates a model's discriminatory power. For example, a value of 0.75 indcates that 75% of the time the model assigns a higher probably of presence to a random site with fish than to a random site without fish.
 
 We selected the model with the highest average AUROC over the five-fold training. This model was then retrained using the full training data set and evaluated using the test set, which had been held out for the entire process. We repeated this process XXXX times to prevent our results from being overly influenced by chance.
 
-
-
 ## model performance
-The models with the highest AUROC for Sacramento pikeminnow, smallmouth bass, and largemouth base were xxxx (Mean, IQR), xxxx (Mean, IQR), and xxxx (Mean, IQR), respectively (@fig-roc-auc). We also evaluated model overfitting by comparing performance on training data vs. testing data. The largest difference in median AUROC for Sacramento pikeminnow, smallmouth bass, and largemouth base were xxxx, xxx, and xxx respectively, while most values were under xxxx. These small differences demonstrate that the models performed similarly for the testing data and indicate that the models were generalizable. 
+
+The models with the highest AUROC for Sacramento pikeminnow, smallmouth bass, and largemouth base were xxxx (Mean, IQR), xxxx (Mean, IQR), and xxxx (Mean, IQR), respectively (@fig-roc-auc). We also evaluated model overfitting by comparing performance on training data vs. testing data. The largest difference in median AUROC for Sacramento pikeminnow, smallmouth bass, and largemouth base were xxxx, xxx, and xxx respectively, while most values were under xxxx. These small differences demonstrate that the models performed similarly for the testing data and indicate that the models were generalizable.
 
 ## model interpretability
-We used permutational importance to compare feature importance across different models [@fig-var-imp].
+
+``` {r, echo=FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+tar_load(var_imp_summary)
+
+groups <- c("species", "model_name", "variable")
+
+med_vals <- var_imp_summary %>%
+  group_by(species, model_name, variable) %>%
+  summarize(var_imp = median(var_imp)) %>%
+  arrange(desc(var_imp), .by_group = TRUE) %>%
+  slice_head(n = 2) %>%
+  ungroup() %>%
+  group_by(species) %>%
+  count(variable) %>%
+  ungroup()
+
+get_vip_value <- function(data, species_name, variable_name) {
+  data %>%
+    filter(species == species_name, variable == variable_name) %>%
+    pull(n)
+}
+
+```
+
+Although ML models can be powerful predictive tools, many models are seen as "black boxes" when attempting to understand the most important factors the model uses to make predictions. Here, we used permutational importance to compare feature importance across different models [@fig-var-imp]. Although the importance of variables differed somewhat among models for each species, some consistent patterns emerge. In largemouth bass, bank type, dominant substrate, and water depth had either the highest or second highest variable importance `r get_vip_value(med_vals, "lmb", "bank_type")`, `r get_vip_value(med_vals, "lmb", "dominant_substrate")`, and `r get_vip_value(med_vals, "lmb", "waterdepth")` times, respectively.
 
 ![roc auc plot](`r tar_read(roc_plot)`){#fig-roc-auc}
 
@@ -116,35 +180,34 @@ We used permutational importance to compare feature importance across different 
 
 ![maps](/output/hab_rating_all_models.jpg){#fig-maps}
 
-
 # Discussion
- - importance of predation on management outcomes
- - invasive speices
- - traditional statistics models can identify key environmental variables but tend not to be general enough for predictions
- - If environments can be adequately characterized then ML can do both
- - this is still early days for applications of such models in htese subjects
 
- - develpped flexible pipeline to benchmark models
- - say what i found
- - summarize how pipeline is arranged
- - transition to how data collection needs to be standardized/thought out
+Understanding the impacts of local management decisions on factors such as predator distributions that can impact managed species is critical to management. This is especially important in the Sacramento River, which has seen the introduciton of numerous exotic piscivores that impact juvenile salmonids. Traditional statistical models excel at inference, providing a clear picture of how outcomes are related to changes in independent variables. However, such models are not usually intended for or indeed tested for their predictive validity. Conversely, the entire ML workflow is oriented around training and selecting the best predictor, often at the expense of model interpretability. If environments can be adequately characterized then ML can do both, as we have demonstrated here. The application of ML models for predicting the fine-scaled distribution of animals is still uncharted territory and requires considerable study before it can be widely adopted.
+
+Here, we developed flexible pipeline to benchmark various ML models using data for three species collected during two field surveys. Data were split randomly into training and testing sets, which were used to train and evaluate models. We repeated this process XXXX times to reduce the impact of randomness on model performance results. Model performance based on the testing sets differed little from performance during model training in all models, indicating that the model performance should translate to new data.
+
+
+
+Average model- say what i found - summarize how pipeline is arranged - transition to how data collection needs to be standardized/thought out
 
 ## trade-offs among models
-- nonlinear models can be harder to interpret but may offer improved predictions
-- some models take considerably longer to train than others but may not offer considerable advantages for predictions.
+
+-   nonlinear models can be harder to interpret but may offer improved predictions
+-   some models take considerably longer to train than others but may not offer considerable advantages for predictions.
 
 ## method may be species specific
-- hard to collect data for species that appear sporadically in large numbers
-- in effective for species that are highly mobile
-<!-- 
+
+-   hard to collect data for species that appear sporadically in large numbers
+-   in effective for species that are highly mobile
 ## limitations for "cell" size when collecting data
 
 - sampling area size should reflect the behavior of a fish
 - if data transects are too large, then environmental heterogeneity may be overly "averaged"; i.e., each transect may be too similar
 - similarly, larger areas are more likely to contain fish, so the model may simply predict fish in every "cell"
-- areas that are too small may inflate the number of absences in the data, so the model may simply predict that all cells are empty. -->
+- areas that are too small may inflate the number of absences in the data, so the model may simply predict that all cells are empty.
 
 ## data availability limitations
+
 One challenge for future use of these models for predicting predator distributions is data limitation. Appropriate data are time and energy intensive to collect, especially if they are to include the adequate spatiotemporal coverage as well as sampling intensity at each transect (e.g., multiple passes with electroshockers to catch as many fish as possible). Thus, absences are more likely to represent true negatives rather than fish missed during sampling, and the number of positives is increased. However, this strategy clearly increases the cost to collect data and balancing the size of the study area (i.e., how generalizable the model is spatially), the time frequency of sampling (i.e., how generalizable the model is temporally), and the sampling intensity (i.e., how closely the data capture reality) may be logistically challenging. Understanding how different models perform when one or more of these dimensions is compromised is crucical to model selection, and will likely vary with species.
 
-Another consideration is the size of each transect. Transects that are too large may have environmental parameters that differ little from the average of the whole study site. Additionally, larger transects are more likely to contain fish, so the model training process may simply converge on models that predict fish at every location. Conversely, using transects that are too small may result in an overwhelming number of absences simply because fish move even within their own territories, resulting in models that predict absences at every location. Therefore, transects should be small enough to contain a heterogenous mix of environmental parameters, while being large enough to be comparable to a fish's territorial size. [mention dataset that failed?] Such modeling approaches may be inappropriate or need additional considerations for species that are highly mobile or seasonally sporadic, such as striped bass in the Sacramento River [ref].
+Another consideration is the size of each transect. Transects that are too large may have environmental parameters that differ little from the average of the whole study site. Additionally, larger transects are more likely to contain fish, so the model training process may simply converge on models that predict fish at every location. Conversely, using transects that are too small may result in an overwhelming number of absences simply because fish move even within their own territories, resulting in models that predict absences at every location. Therefore, transects should be small enough to contain a heterogenous mix of environmental parameters, while being large enough to be comparable to a fish's territorial size. \[mention dataset that failed?\] Such modeling approaches may be inappropriate or need additional considerations for species that are highly mobile or seasonally sporadic, such as striped bass in the Sacramento River \[ref\].
